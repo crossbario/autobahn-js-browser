@@ -101,7 +101,7 @@ function sign (key, challenge) {
 exports.sign = sign;
 exports.derive_key = derive_key;
 
-},{"crypto-js":27}],3:[function(_dereq_,module,exports){
+},{"crypto-js":28}],3:[function(_dereq_,module,exports){
 ///////////////////////////////////////////////////////////////////////////////
 //
 //  AutobahnJS - http://autobahn.ws, http://wamp.ws
@@ -155,7 +155,7 @@ function auth(session, user, extra) {
 
 exports.auth = auth;
 
-},{"when":76,"when/function":53}],4:[function(_dereq_,module,exports){
+},{"when":77,"when/function":54}],4:[function(_dereq_,module,exports){
 (function (global){
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -219,7 +219,7 @@ exports.util = util;
 exports.log = log;
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../package.json":78,"./auth/cra.js":2,"./auth/persona.js":3,"./configure.js":5,"./connection.js":6,"./log.js":7,"./polyfill.js":8,"./session.js":16,"./util.js":18,"when":76,"when/monitor/console":74}],5:[function(_dereq_,module,exports){
+},{"../package.json":79,"./auth/cra.js":2,"./auth/persona.js":3,"./configure.js":5,"./connection.js":6,"./log.js":7,"./polyfill.js":8,"./session.js":16,"./util.js":19,"when":77,"when/monitor/console":75}],5:[function(_dereq_,module,exports){
 ///////////////////////////////////////////////////////////////////////////////
 //
 //  AutobahnJS - http://autobahn.ws, http://wamp.ws
@@ -274,9 +274,12 @@ var _transports = new Transports();
 var websocket = _dereq_('./transport/websocket.js');
 _transports.register("websocket", websocket.Factory);
 
+var longpoll = _dereq_('./transport/longpoll.js');
+_transports.register("longpoll", longpoll.Factory);
+
 exports.transports = _transports;
 
-},{"./transport/websocket.js":17}],6:[function(_dereq_,module,exports){
+},{"./transport/longpoll.js":17,"./transport/websocket.js":18}],6:[function(_dereq_,module,exports){
 (function (global){
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -350,7 +353,12 @@ var Connection = function (options) {
    //
    // backward compatiblity
    if (!self._options.transports) {
-      self._options.transports = [{type: 'websocket', url: self._options.url}];
+      self._options.transports = [
+         {
+            type: 'websocket',
+            url: self._options.url
+         }
+      ];
    }
    self._transport_factories = [];
    self._init_transport_factories();
@@ -414,16 +422,22 @@ var Connection = function (options) {
 
 Connection.prototype._create_transport = function () {
    for (var i = 0; i < this._transport_factories.length; ++i) {
+      var transport_factory = this._transport_factories[i];
+      log.debug("trying to create WAMP transport of type: " + transport_factory.type);
       try {
-         var transport = this._transport_factories[i].create();
+         var transport = transport_factory.create();
          if (transport) {
+            log.debug("using WAMP transport type: " + transport_factory.type);
             return transport;
          }
       } catch (e) {
          // ignore
+         log.debug("could not create WAMP transport '" + transport_factory.type + "': " + e);
       }
    }
-   throw "could not create a transport";
+
+   // could not create any WAMP transport
+   return null;
 };
 
 
@@ -438,30 +452,94 @@ Connection.prototype._init_transport_factories = function () {
     //if(typeof transports === "object") {
     //    this._options.transports = [transports];
     //}
-    for(var i=0;i<this._options.transports.length;i++) {
+    for(var i = 0; i < this._options.transports.length; ++i) {
         // cascading transports until we find one which works
         transport_options =  this._options.transports[i];
-        if(!transport_options.url) {
+
+        if (!transport_options.url) {
             // defaulting to options.url if none is provided
             transport_options.url = this._options.url;
         }
-        if(!transport_options.protocols) {
+        if (!transport_options.protocols) {
             transport_options.protocols = this._options.protocols;
         }
         util.assert(transport_options.type, "No transport.type specified");
         util.assert(typeof transport_options.type === "string", "transport.type must be a string");
         try {
             transport_factory_klass = autobahn.transports.get(transport_options.type);
-            if(transport_factory_klass) {
+            if (transport_factory_klass) {
                 transport_factory = new transport_factory_klass(transport_options);
                 this._transport_factories.push(transport_factory);
             }
-        } catch(exc) {
+        } catch (exc) {
             console.error(exc);
         }
     }
 };
 
+
+Connection.prototype._autoreconnect_reset_timer = function () {
+
+   var self = this;
+
+   if (self._retry_timer) {
+      clearTimeout(self._retry_timer);
+   }
+   self._retry_timer = null;
+}
+
+
+Connection.prototype._autoreconnect_reset = function () {
+
+   var self = this;
+
+   self._autoreconnect_reset_timer();
+
+   self._retry_count = 0;
+   self._retry_delay = self._initial_retry_delay;
+   self._is_retrying = false;
+}
+
+
+Connection.prototype._autoreconnect_advance = function () {
+
+   var self = this;
+
+   // jitter retry delay
+   if (self._retry_delay_jitter) {
+      self._retry_delay = util.rand_normal(self._retry_delay, self._retry_delay * self._retry_delay_jitter);
+   }
+
+   // cap the retry delay
+   if (self._retry_delay > self._max_retry_delay) {
+      self._retry_delay = self._max_retry_delay;
+   }
+
+   // count number of retries
+   self._retry_count += 1;
+
+   var res;
+   if (self._retry && self._retry_count <= self._max_retries) {
+      res = {
+         count: self._retry_count,
+         delay: self._retry_delay,
+         will_retry: true
+      };
+   } else {
+      res = {
+         count: null,
+         delay: null,
+         will_retry: false
+      }
+   }
+
+   // retry delay growth for next retry cycle
+   if (self._retry_delay_growth) {
+      self._retry_delay = self._retry_delay * self._retry_delay_growth;
+   }
+
+   return res;
+}
 
 
 Connection.prototype.open = function () {
@@ -472,27 +550,26 @@ Connection.prototype.open = function () {
       throw "connection already open (or opening)";
    }
 
-   // reset reconnection tracking
+   self._autoreconnect_reset();
    self._retry = true;
-   self._retry_count = 0;
-   self._retry_delay = self._initial_retry_delay;
-   self._is_retrying = false;
-   if (self._retry_timer) {
-      log.debug("cancelling automatic retry upon manual retry");
-      clearTimeout(self._retry_timer);
-   }
-   self._retry_timer = null;
-
 
    function retry () {
 
-      // let the WebSocket factory produce a new WebSocket connection
-      // which will automatically connect
+      // create a WAMP transport
       self._transport = self._create_transport();
+
       if (!self._transport) {
+         // failed to create a WAMP transport
          self._retry = false;
          if (self.onclose) {
-            self.onclose("unsupported", "WebSocket transport unsupported");
+            var details = {
+               reason: null,
+               message: null,
+               retry_delay: null,
+               retry_count: null,
+               will_retry: false
+            };
+            self.onclose("unsupported", details);
          }
          return;
       }
@@ -504,11 +581,8 @@ Connection.prototype.open = function () {
 
       self._transport.onopen = function () {
 
-         // remove any pending reconnect timer
-         if (self._retry_timer) {
-            clearTimeout(self._retry_timer);
-         }
-         self._retry_timer = null;
+         // reset auto-reconnect timer and tracking
+         self._autoreconnect_reset();
 
          // log successful connections
          self._connect_successes += 1;
@@ -533,12 +607,15 @@ Connection.prototype.open = function () {
 
       self._session.onleave = function (reason, details) {
          self._session_close_reason = reason;
-         self._session_close_message = details.message;
+         self._session_close_message = details.message || "";
          self._retry = false;
          self._transport.close(1000);
       };
 
       self._transport.onclose = function (evt) {
+
+         // remove any pending reconnect timer
+         self._autoreconnect_reset_timer();
 
          self._transport = null;
 
@@ -555,25 +632,8 @@ Connection.prototype.open = function () {
          } else {
             reason = "closed";
          }
-
-         // Connection.onclose() allows to cancel any subsequent retry attempt       
-         var stop_retrying = false;
-
-         // jitter retry delay
-         if (self._retry_delay_jitter) {
-            self._retry_delay = util.rand_normal(self._retry_delay, self._retry_delay * self._retry_delay_jitter);
-         }
-
-         // cap the retry delay
-         if (self._retry_delay > self._max_retry_delay) {
-            self._retry_delay = self._max_retry_delay;
-         }
-
-         // count number of retries
-         self._retry_count += 1;
-
-         // flag that indicated if we would retry (if retrying is not stopped manually)
-         var will_retry = self._retry_count <= self._max_retries;
+        
+         var next_retry = self._autoreconnect_advance();
 
          // fire app code handler
          //
@@ -581,12 +641,13 @@ Connection.prototype.open = function () {
             var details = {
                reason: self._session_close_reason,
                message: self._session_close_message,
-               retry_delay: self._retry_delay,
-               retry_count: self._retry_count,
-               will_retry: will_retry
+               retry_delay: next_retry.delay,
+               retry_count: next_retry.count,
+               will_retry: next_retry.will_retry
             };
             try {
-               stop_retrying = self.onclose(reason, details);
+               // Connection.onclose() allows to cancel any subsequent retry attempt
+               var stop_retrying = self.onclose(reason, details);
             } catch (e) {
                log.debug("Exception raised from app code while firing Connection.onclose()", e);
             }
@@ -605,17 +666,12 @@ Connection.prototype.open = function () {
          //
          if (self._retry && !stop_retrying) {
 
-            if (will_retry) {
+            if (next_retry.will_retry) {
 
                self._is_retrying = true;
 
-               log.debug("retrying in " + self._retry_delay + " s");
-               self._retry_timer = setTimeout(retry, self._retry_delay * 1000);
-
-               // retry delay growth for next retry cycle
-               if (self._retry_delay_growth) {
-                  self._retry_delay = self._retry_delay * self._retry_delay_growth;
-               }
+               log.debug("retrying in " + next_retry.delay + " s");
+               self._retry_timer = setTimeout(retry, next_retry.delay * 1000);
 
             } else {
                log.debug("giving up trying to reconnect");
@@ -667,7 +723,7 @@ Object.defineProperty(Connection.prototype, "session", {
 
 Object.defineProperty(Connection.prototype, "isOpen", {
    get: function () {
-      if (this._session && this._session.isOpen()) {
+      if (this._session && this._session.isOpen) {
          return true;
       } else {
          return false;
@@ -689,6 +745,18 @@ Object.defineProperty(Connection.prototype, "isConnected", {
 
 
 
+Object.defineProperty(Connection.prototype, "transport", {
+   get: function () {
+      if (this._transport) {
+         return this._transport;
+      } else {
+         return {info: {type: 'none', url: null, protocol: null}};
+      }
+   }
+});
+
+
+
 Object.defineProperty(Connection.prototype, "isRetrying", {
    get: function () {
       return this._is_retrying;
@@ -700,7 +768,7 @@ Object.defineProperty(Connection.prototype, "isRetrying", {
 exports.Connection = Connection;
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./autobahn.js":4,"./log.js":7,"./session.js":16,"./util.js":18,"when":76}],7:[function(_dereq_,module,exports){
+},{"./autobahn.js":4,"./log.js":7,"./session.js":16,"./util.js":19,"when":77}],7:[function(_dereq_,module,exports){
 (function (global){
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -735,7 +803,6 @@ _dereq_('./polyfill/function');
 _dereq_('./polyfill/console');
 _dereq_('./polyfill/typedarray');
 _dereq_('./polyfill/json');
-
 
 },{"./polyfill/array":9,"./polyfill/console":10,"./polyfill/function":11,"./polyfill/json":12,"./polyfill/object":13,"./polyfill/string":14,"./polyfill/typedarray":15}],9:[function(_dereq_,module,exports){
 if ( 'function' !== typeof Array.prototype.reduce ) {
@@ -2727,6 +2794,10 @@ var when_fn = _dereq_("when/function");
 var log = _dereq_('./log.js');
 var util = _dereq_('./util.js');
 
+// IE fallback (http://afuchs.tumblr.com/post/23550124774/date-now-in-ie8)
+Date.now = Date.now || function() { return +new Date; };
+
+
 // WAMP "Advanced Profile" support in AutobahnJS per role
 //
 WAMP_FEATURES = {
@@ -2929,7 +3000,8 @@ var Session = function (socket, defer, onchallenge) {
 
 
    self._send_wamp = function (msg) {
-      self._socket.send(JSON.stringify(msg));
+      // forward WAMP message to be sent to WAMP transport
+      self._socket.send(msg);
    };
 
 
@@ -3437,9 +3509,10 @@ var Session = function (socket, defer, onchallenge) {
    self._MESSAGE_MAP[MSG_TYPE.INVOCATION] = self._process_INVOCATION;
 
 
-   self._socket.onmessage = function (evt) {
+   // callback fired by WAMP transport on receiving a WAMP message
+   //
+   self._socket.onmessage = function (msg) {
 
-      var msg = JSON.parse(evt.data);
       var msg_type = msg[0];
 
       // WAMP session not yet open
@@ -4073,7 +4146,213 @@ exports.Registration = Registration;
 exports.Publication = Publication;
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./log.js":7,"./util.js":18,"when":76,"when/function":53}],17:[function(_dereq_,module,exports){
+},{"./log.js":7,"./util.js":19,"when":77,"when/function":54}],17:[function(_dereq_,module,exports){
+///////////////////////////////////////////////////////////////////////////////
+//
+//  AutobahnJS - http://autobahn.ws, http://wamp.ws
+//
+//  A JavaScript library for WAMP ("The Web Application Messaging Protocol").
+//
+//  Copyright (C) 2011-2014 Tavendo GmbH, http://tavendo.com
+//
+//  Licensed under the MIT License.
+//  http://www.opensource.org/licenses/mit-license.php
+//
+///////////////////////////////////////////////////////////////////////////////
+
+var util = _dereq_('../util.js');
+var log = _dereq_('../log.js');
+
+var when = _dereq_('when');
+
+
+function Factory (options) {
+   var self = this;
+
+   util.assert(options.url !== undefined, "options.url missing");
+   util.assert(typeof options.url === "string", "options.url must be a string");
+
+   self._options = options;
+};
+
+
+Factory.prototype.type = "longpoll";
+
+
+Factory.prototype.create = function () {
+
+   var self = this;
+
+   log.debug("longpoll.Factory.create");
+
+   // the WAMP transport we create
+   var transport = {};
+
+   // these will get defined further below
+   transport.protocol = undefined;
+   transport.send = undefined;
+   transport.close = undefined;
+
+   // these will get overridden by the WAMP session using this transport
+   transport.onmessage = function () {};
+   transport.onopen = function () {};
+   transport.onclose = function () {};
+
+   transport.info = {
+      type: 'longpoll',
+      url: null,
+      protocol: 'wamp.2.json'
+   };
+
+   transport._run = function () {
+
+      var session_info = null;
+      var send_buffer = [];
+      var is_closing = false;
+
+      var txseq = 0;
+      var rxseq = 0;
+
+      var options = {'protocols': ['wamp.2.json']};
+      var request_timeout = self._options.request_timeout || 2000;
+
+      util.http_post(self._options.url + '/open', JSON.stringify(options), request_timeout).then(
+
+         function (payload) {
+
+            session_info = JSON.parse(payload);
+            var base_url = self._options.url + '/' + session_info.transport;
+
+            transport.info.url = base_url;
+
+            log.debug("longpoll.Transport: open", session_info);
+
+            transport.close = function (code, reason) {
+
+               if (is_closing) {
+                  throw "transport is already closing";
+               }
+
+               is_closing = true;
+
+               util.http_post(base_url + '/close', null, request_timeout).then(
+
+                  function () {
+                     log.debug("longpoll.Transport: transport closed");
+                     var details = {
+                        code: 1000,
+                        reason: "transport closed",
+                        wasClean: true
+                     }
+                     transport.onclose(details);
+                  },
+
+                  function (err) {
+                     log.debug("longpoll.Transport: could not close transport", err.code, err.text);
+                  }
+               );
+            }
+
+            transport.send = function (msg) {
+
+               if (is_closing) {
+                  throw "transport is closing or closed already";
+               }
+
+               txseq += 1;
+
+               log.debug("longpoll.Transport: sending message ...", msg);
+
+               var payload = JSON.stringify(msg);
+
+               util.http_post(base_url + '/send', payload, request_timeout).then(
+
+                  function () {
+                     // ok, message sent
+                     log.debug("longpoll.Transport: message sent");
+                  },
+
+                  function (err) {
+                     log.debug("longpoll.Transport: could not send message", err.code, err.text);
+
+                     is_closing = true;
+                     var details = {
+                        code: 1001,
+                        reason: "transport send failure (HTTP/POST status " + err.code + " - '" + err.text + "')",
+                        wasClean: false
+                     }
+                     transport.onclose(details);
+                  }
+               );
+            };
+
+            function receive() {
+
+               rxseq += 1;
+
+               log.debug("longpoll.Transport: polling for message ...");
+
+               util.http_post(base_url + '/receive', null, request_timeout).then(
+
+                  function (payload) {
+
+                     if (payload) {                     
+
+                        var msg = JSON.parse(payload);
+
+                        log.debug("longpoll.Transport: message received", msg);
+
+                        transport.onmessage(msg);
+                     }
+
+                     if (!is_closing) {
+                        receive();
+                     }
+                  },
+
+                  function (err) {
+                     log.debug("longpoll.Transport: could not receive message", err.code, err.text);
+
+                     is_closing = true;
+                     var details = {
+                        code: 1001,
+                        reason: "transport receive failure (HTTP/POST status " + err.code + " - '" + err.text + "')",
+                        wasClean: false
+                     }
+                     transport.onclose(details);
+                  }
+               );
+            }
+
+            receive();
+
+            transport.onopen();
+         },
+
+         function (err) {
+            log.debug("longpoll.Transport: could not open transport", err.code, err.text);
+
+            is_closing = true;
+            var details = {
+               code: 1001,
+               reason: "transport open failure (HTTP/POST status " + err.code + " - '" + err.text + "')",
+               wasClean: false
+            }
+            transport.onclose(details);
+         }
+      );
+   }
+
+   transport._run();
+
+   return transport;
+};
+
+
+
+exports.Factory = Factory;
+
+},{"../log.js":7,"../util.js":19,"when":77}],18:[function(_dereq_,module,exports){
 (function (global){
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -4090,142 +4369,187 @@ exports.Publication = Publication;
 
 
 var util = _dereq_('../util.js');
+var log = _dereq_('../log.js');
 
 
 function Factory (options) {
    var self = this;
 
-   self._options = options;
+   util.assert(options.url !== undefined, "options.url missing");
+   util.assert(typeof options.url === "string", "options.url must be a string");
 
-   util.assert(self._options.url !== undefined, "options.url missing");
-   util.assert(typeof self._options.url === "string", "options.url must be a string");
-
-   if (!self._options.protocols) {
-      self._options.protocols = ['wamp.2.json'];
+   if (!options.protocols) {
+      options.protocols = ['wamp.2.json'];
    } else {
-      util.assert(Array.isArray(self._options.protocols), "options.protocols must be an array");
+      util.assert(Array.isArray(options.protocols), "options.protocols must be an array");
    }
+
+   self._options = options;
 }
 
 
-Factory.type = "websocket";
+Factory.prototype.type = "websocket";
 
 
 Factory.prototype.create = function () {
 
    var self = this;
 
+   // the WAMP transport we create
+   var transport = {};
+
+   // these will get defined further below
+   transport.protocol = undefined;
+   transport.send = undefined;
+   transport.close = undefined;
+
+   // these will get overridden by the WAMP session using this transport
+   transport.onmessage = function () {};
+   transport.onopen = function () {};
+   transport.onclose = function () {};
+
+   transport.info = {
+      type: 'websocket',
+      url: null,
+      protocol: 'wamp.2.json'
+   };
+
    //
    // running in browser
    //
    if ('window' in global) {
 
-      // Chrome, MSIE, newer Firefox
-      if ("WebSocket" in window) {
-         
-         if (self._options.protocols) {
-            return new window.WebSocket(self._options.url, self._options.protocols);
+      (function () {
+
+         var websocket;
+
+         // Chrome, MSIE, newer Firefox
+         if ("WebSocket" in window) {
+            
+            if (self._options.protocols) {
+               websocket = new window.WebSocket(self._options.url, self._options.protocols);
+            } else {
+               websocket = new window.WebSocket(self._options.url);
+            }
+
+         // older versions of Firefox prefix the WebSocket object
+         } else if ("MozWebSocket" in window) {
+
+            if (self._options.protocols) {
+               websocket = new window.MozWebSocket(self._options.url, self._options.protocols);
+            } else {
+               websocket = new window.MozWebSocket(self._options.url);
+            }
          } else {
-            return new window.WebSocket(self._options.url);
+            throw "browser does not support WebSocket";
          }
 
-      // older versions of Firefox prefix the WebSocket object
-      } else if ("MozWebSocket" in window) {
+         websocket.onmessage = function (evt) {
+            log.debug("WebSocket transport receive", evt.data);
 
-         if (self._options.protocols) {
-            return new window.MozWebSocket(self._options.url, self._options.protocols);
-         } else {
-            return new window.MozWebSocket(self._options.url);
+            var msg = JSON.parse(evt.data);
+            transport.onmessage(msg);
          }
-      } else {
-         return false;
-      }
+
+         websocket.onopen = function () {
+            transport.info.url = self._options.url;
+            transport.onopen();
+         }
+
+         websocket.onclose = function (evt) {
+            var details = {
+               code: evt.code,
+               reason: evt.message,
+               wasClean: evt.wasClean
+            }
+            transport.onclose(details);
+         }
+
+         // do NOT do the following, since that will make
+         // transport.onclose() fire twice (browsers already fire
+         // websocket.onclose() for errors also)
+         //websocket.onerror = websocket.onclose;
+
+         transport.send = function (msg) {
+            var payload = JSON.stringify(msg);
+            log.debug("WebSocket transport send", payload);
+            websocket.send(payload);
+         }
+
+         transport.close = function (code, reason) {
+            websocket.close(code, reason);
+         };
+
+      })();
 
    //
    // running on NodeJS
    //
    } else {
 
-      // our WebSocket shim with W3C API
-      var websocket = {};
-
-      // these will get defined by the specific shim
-      websocket.protocol = undefined;
-      websocket.send = undefined;
-      websocket.close = undefined;
-
-      // these will get called by the shim.
-      // in case user code doesn't override these, provide these NOPs
-      websocket.onmessage = function () {};
-      websocket.onopen = function () {};
-      websocket.onclose = function () {};
-      websocket.onerror = function () {};
-
-      var self = this;
-
-      // https://github.com/einaros/ws
-      //
       (function () {
 
-         var WebSocket = _dereq_('ws');
-         var client;
-         var protocols;
+         var WebSocket = _dereq_('ws'); // https://github.com/einaros/ws
+         var websocket;
 
+         var protocols;
          if (self._options.protocols) {
             protocols = self._options.protocols;
             if (Array.isArray(protocols)) {
                protocols = protocols.join(',');
             }
-            client = new WebSocket(self._options.url, {protocol: protocols});
+            websocket = new WebSocket(self._options.url, {protocol: protocols});
          } else {
-            client = new WebSocket(self._options.url);
+            websocket = new WebSocket(self._options.url);
          }
 
-         websocket.send = function (msg) {
-            client.send(msg, {binary: false});
+         transport.send = function (msg) {
+            var payload = JSON.stringify(msg);
+            websocket.send(payload, {binary: false});
          };
 
-         websocket.close = function (code, reason) {
-            client.close();
+         transport.close = function (code, reason) {
+            websocket.close();
          };
 
-         client.on('open', function () {
-            websocket.onopen();
+         websocket.on('open', function () {
+            transport.onopen();
          });
 
-         client.on('message', function (data, flags) {
+         websocket.on('message', function (data, flags) {
             if (flags.binary) {
                // FIXME!
             } else {
-               websocket.onmessage({data: data});
+               var msg = JSON.parse(data);
+               transport.onmessage(msg);
             }
          });
 
          // FIXME: improve mapping to WS API for the following
          // https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent#Close_codes
          //
-         client.on('close', function (code, message) {
-            var evt = {
+         websocket.on('close', function (code, message) {
+            var details = {
                code: code,
                reason: message,
                wasClean: code === 1000
             }
-            websocket.onclose(evt);
+            transport.onclose(details);
          });
 
-         client.on('error', function (error) {
-            var evt = {
+         websocket.on('error', function (error) {
+            var details = {
                code: 1006,
                reason: '',
                wasClean: false
             }
-            websocket.onclose(evt);
+            transport.onclose(details);
          });
 
       })();
-
-      return websocket;
    }
+
+   return transport;
 };
 
 
@@ -4233,7 +4557,7 @@ Factory.prototype.create = function () {
 exports.Factory = Factory;
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../util.js":18,"ws":77}],18:[function(_dereq_,module,exports){
+},{"../log.js":7,"../util.js":19,"ws":78}],19:[function(_dereq_,module,exports){
 (function (global){
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -4248,8 +4572,13 @@ exports.Factory = Factory;
 //
 ///////////////////////////////////////////////////////////////////////////////
 
+var log = _dereq_('./log.js');
 
-function rand_normal (mean, sd) {
+var when = _dereq_('when');
+
+
+
+var rand_normal = function (mean, sd) {
    // Derive a Gaussian from Uniform random variables
    // http://en.wikipedia.org/wiki/Box%E2%80%93Muller_transform
    var x1, x2, rad;
@@ -4266,6 +4595,7 @@ function rand_normal (mean, sd) {
 };
 
 
+
 var assert = function (cond, text) {
 	if (cond) {
       return;
@@ -4278,11 +4608,87 @@ var assert = function (cond, text) {
 };
 
 
+
+// Helper to do HTTP/POST requests returning deferreds. This function is
+// supposed to work on IE8, IE9 and old Android WebKit browsers. We don't care
+// if it works with other browsers.
+//
+var http_post = function (url, data, timeout) {
+
+   log.debug("new http_post request", url, data, timeout);
+
+   var d = when.defer();
+   var req = new XMLHttpRequest();
+
+   req.onreadystatechange = function () {
+
+      if (req.readyState === 4) {
+
+         // Normalize IE's response to HTTP 204 when Win error 1223.
+         // http://stackoverflow.com/a/10047236/884770
+         //
+         var status = (req.status === 1223) ? 204 : req.status;
+
+         if (status === 200) {
+
+            // response with content
+            //
+            d.resolve(req.responseText);
+
+         } if (status === 204) {
+
+            // empty response
+            //
+            d.resolve();
+
+         } else {
+
+            // anything else is a fail
+            //
+            var statusText = null;
+            try {
+               statusText = req.statusText;
+            } catch (e) {
+               // IE8 fucks up on this
+            }
+            d.reject({code: status, text: statusText});
+         }
+      }
+   }
+
+   req.open("POST", url, true);
+   req.setRequestHeader("Content-type", "application/json; charset=utf-8");
+
+   if (timeout > 0) {
+      req.timeout = timeout; // request timeout in ms
+
+      req.ontimeout = function () {
+         d.reject({code: 501, text: "request timeout"});
+      }
+   }
+
+   if (data) {
+      req.send(data);
+   } else {
+      req.send();
+   }
+
+   if (d.promise.then) {
+      // whenjs has the actual user promise in an attribute
+      return d.promise;
+   } else {
+      return d;
+   }
+};
+
+
+
 exports.rand_normal = rand_normal;
 exports.assert = assert;
+exports.http_post = http_post;
 
 }).call(this,typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],19:[function(_dereq_,module,exports){
+},{"./log.js":7,"when":77}],20:[function(_dereq_,module,exports){
 ;(function (root, factory, undef) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -4510,7 +4916,7 @@ exports.assert = assert;
 	return CryptoJS.AES;
 
 }));
-},{"./cipher-core":20,"./core":21,"./enc-base64":22,"./evpkdf":24,"./md5":29}],20:[function(_dereq_,module,exports){
+},{"./cipher-core":21,"./core":22,"./enc-base64":23,"./evpkdf":25,"./md5":30}],21:[function(_dereq_,module,exports){
 ;(function (root, factory) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -5386,7 +5792,7 @@ exports.assert = assert;
 
 
 }));
-},{"./core":21}],21:[function(_dereq_,module,exports){
+},{"./core":22}],22:[function(_dereq_,module,exports){
 ;(function (root, factory) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -6113,7 +6519,7 @@ exports.assert = assert;
 	return CryptoJS;
 
 }));
-},{}],22:[function(_dereq_,module,exports){
+},{}],23:[function(_dereq_,module,exports){
 ;(function (root, factory) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -6237,7 +6643,7 @@ exports.assert = assert;
 	return CryptoJS.enc.Base64;
 
 }));
-},{"./core":21}],23:[function(_dereq_,module,exports){
+},{"./core":22}],24:[function(_dereq_,module,exports){
 ;(function (root, factory) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -6387,7 +6793,7 @@ exports.assert = assert;
 	return CryptoJS.enc.Utf16;
 
 }));
-},{"./core":21}],24:[function(_dereq_,module,exports){
+},{"./core":22}],25:[function(_dereq_,module,exports){
 ;(function (root, factory, undef) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -6520,7 +6926,7 @@ exports.assert = assert;
 	return CryptoJS.EvpKDF;
 
 }));
-},{"./core":21,"./hmac":26,"./sha1":45}],25:[function(_dereq_,module,exports){
+},{"./core":22,"./hmac":27,"./sha1":46}],26:[function(_dereq_,module,exports){
 ;(function (root, factory, undef) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -6587,7 +6993,7 @@ exports.assert = assert;
 	return CryptoJS.format.Hex;
 
 }));
-},{"./cipher-core":20,"./core":21}],26:[function(_dereq_,module,exports){
+},{"./cipher-core":21,"./core":22}],27:[function(_dereq_,module,exports){
 ;(function (root, factory) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -6731,7 +7137,7 @@ exports.assert = assert;
 
 
 }));
-},{"./core":21}],27:[function(_dereq_,module,exports){
+},{"./core":22}],28:[function(_dereq_,module,exports){
 ;(function (root, factory, undef) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -6750,7 +7156,7 @@ exports.assert = assert;
 	return CryptoJS;
 
 }));
-},{"./aes":19,"./cipher-core":20,"./core":21,"./enc-base64":22,"./enc-utf16":23,"./evpkdf":24,"./format-hex":25,"./hmac":26,"./lib-typedarrays":28,"./md5":29,"./mode-cfb":30,"./mode-ctr":32,"./mode-ctr-gladman":31,"./mode-ecb":33,"./mode-ofb":34,"./pad-ansix923":35,"./pad-iso10126":36,"./pad-iso97971":37,"./pad-nopadding":38,"./pad-zeropadding":39,"./pbkdf2":40,"./rabbit":42,"./rabbit-legacy":41,"./rc4":43,"./ripemd160":44,"./sha1":45,"./sha224":46,"./sha256":47,"./sha3":48,"./sha384":49,"./sha512":50,"./tripledes":51,"./x64-core":52}],28:[function(_dereq_,module,exports){
+},{"./aes":20,"./cipher-core":21,"./core":22,"./enc-base64":23,"./enc-utf16":24,"./evpkdf":25,"./format-hex":26,"./hmac":27,"./lib-typedarrays":29,"./md5":30,"./mode-cfb":31,"./mode-ctr":33,"./mode-ctr-gladman":32,"./mode-ecb":34,"./mode-ofb":35,"./pad-ansix923":36,"./pad-iso10126":37,"./pad-iso97971":38,"./pad-nopadding":39,"./pad-zeropadding":40,"./pbkdf2":41,"./rabbit":43,"./rabbit-legacy":42,"./rc4":44,"./ripemd160":45,"./sha1":46,"./sha224":47,"./sha256":48,"./sha3":49,"./sha384":50,"./sha512":51,"./tripledes":52,"./x64-core":53}],29:[function(_dereq_,module,exports){
 ;(function (root, factory) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -6827,7 +7233,7 @@ exports.assert = assert;
 	return CryptoJS.lib.WordArray;
 
 }));
-},{"./core":21}],29:[function(_dereq_,module,exports){
+},{"./core":22}],30:[function(_dereq_,module,exports){
 ;(function (root, factory) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -7096,7 +7502,7 @@ exports.assert = assert;
 	return CryptoJS.MD5;
 
 }));
-},{"./core":21}],30:[function(_dereq_,module,exports){
+},{"./core":22}],31:[function(_dereq_,module,exports){
 ;(function (root, factory, undef) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -7175,7 +7581,7 @@ exports.assert = assert;
 	return CryptoJS.mode.CFB;
 
 }));
-},{"./cipher-core":20,"./core":21}],31:[function(_dereq_,module,exports){
+},{"./cipher-core":21,"./core":22}],32:[function(_dereq_,module,exports){
 ;(function (root, factory, undef) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -7292,7 +7698,7 @@ exports.assert = assert;
 	return CryptoJS.mode.CTRGladman;
 
 }));
-},{"./cipher-core":20,"./core":21}],32:[function(_dereq_,module,exports){
+},{"./cipher-core":21,"./core":22}],33:[function(_dereq_,module,exports){
 ;(function (root, factory, undef) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -7351,7 +7757,7 @@ exports.assert = assert;
 	return CryptoJS.mode.CTR;
 
 }));
-},{"./cipher-core":20,"./core":21}],33:[function(_dereq_,module,exports){
+},{"./cipher-core":21,"./core":22}],34:[function(_dereq_,module,exports){
 ;(function (root, factory, undef) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -7392,7 +7798,7 @@ exports.assert = assert;
 	return CryptoJS.mode.ECB;
 
 }));
-},{"./cipher-core":20,"./core":21}],34:[function(_dereq_,module,exports){
+},{"./cipher-core":21,"./core":22}],35:[function(_dereq_,module,exports){
 ;(function (root, factory, undef) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -7447,7 +7853,7 @@ exports.assert = assert;
 	return CryptoJS.mode.OFB;
 
 }));
-},{"./cipher-core":20,"./core":21}],35:[function(_dereq_,module,exports){
+},{"./cipher-core":21,"./core":22}],36:[function(_dereq_,module,exports){
 ;(function (root, factory, undef) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -7497,7 +7903,7 @@ exports.assert = assert;
 	return CryptoJS.pad.Ansix923;
 
 }));
-},{"./cipher-core":20,"./core":21}],36:[function(_dereq_,module,exports){
+},{"./cipher-core":21,"./core":22}],37:[function(_dereq_,module,exports){
 ;(function (root, factory, undef) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -7542,7 +7948,7 @@ exports.assert = assert;
 	return CryptoJS.pad.Iso10126;
 
 }));
-},{"./cipher-core":20,"./core":21}],37:[function(_dereq_,module,exports){
+},{"./cipher-core":21,"./core":22}],38:[function(_dereq_,module,exports){
 ;(function (root, factory, undef) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -7583,7 +7989,7 @@ exports.assert = assert;
 	return CryptoJS.pad.Iso97971;
 
 }));
-},{"./cipher-core":20,"./core":21}],38:[function(_dereq_,module,exports){
+},{"./cipher-core":21,"./core":22}],39:[function(_dereq_,module,exports){
 ;(function (root, factory, undef) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -7614,7 +8020,7 @@ exports.assert = assert;
 	return CryptoJS.pad.NoPadding;
 
 }));
-},{"./cipher-core":20,"./core":21}],39:[function(_dereq_,module,exports){
+},{"./cipher-core":21,"./core":22}],40:[function(_dereq_,module,exports){
 ;(function (root, factory, undef) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -7660,7 +8066,7 @@ exports.assert = assert;
 	return CryptoJS.pad.ZeroPadding;
 
 }));
-},{"./cipher-core":20,"./core":21}],40:[function(_dereq_,module,exports){
+},{"./cipher-core":21,"./core":22}],41:[function(_dereq_,module,exports){
 ;(function (root, factory, undef) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -7806,7 +8212,7 @@ exports.assert = assert;
 	return CryptoJS.PBKDF2;
 
 }));
-},{"./core":21,"./hmac":26,"./sha1":45}],41:[function(_dereq_,module,exports){
+},{"./core":22,"./hmac":27,"./sha1":46}],42:[function(_dereq_,module,exports){
 ;(function (root, factory, undef) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -7997,7 +8403,7 @@ exports.assert = assert;
 	return CryptoJS.RabbitLegacy;
 
 }));
-},{"./cipher-core":20,"./core":21,"./enc-base64":22,"./evpkdf":24,"./md5":29}],42:[function(_dereq_,module,exports){
+},{"./cipher-core":21,"./core":22,"./enc-base64":23,"./evpkdf":25,"./md5":30}],43:[function(_dereq_,module,exports){
 ;(function (root, factory, undef) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -8190,7 +8596,7 @@ exports.assert = assert;
 	return CryptoJS.Rabbit;
 
 }));
-},{"./cipher-core":20,"./core":21,"./enc-base64":22,"./evpkdf":24,"./md5":29}],43:[function(_dereq_,module,exports){
+},{"./cipher-core":21,"./core":22,"./enc-base64":23,"./evpkdf":25,"./md5":30}],44:[function(_dereq_,module,exports){
 ;(function (root, factory, undef) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -8330,7 +8736,7 @@ exports.assert = assert;
 	return CryptoJS.RC4;
 
 }));
-},{"./cipher-core":20,"./core":21,"./enc-base64":22,"./evpkdf":24,"./md5":29}],44:[function(_dereq_,module,exports){
+},{"./cipher-core":21,"./core":22,"./enc-base64":23,"./evpkdf":25,"./md5":30}],45:[function(_dereq_,module,exports){
 ;(function (root, factory) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -8598,7 +9004,7 @@ exports.assert = assert;
 	return CryptoJS.RIPEMD160;
 
 }));
-},{"./core":21}],45:[function(_dereq_,module,exports){
+},{"./core":22}],46:[function(_dereq_,module,exports){
 ;(function (root, factory) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -8749,7 +9155,7 @@ exports.assert = assert;
 	return CryptoJS.SHA1;
 
 }));
-},{"./core":21}],46:[function(_dereq_,module,exports){
+},{"./core":22}],47:[function(_dereq_,module,exports){
 ;(function (root, factory, undef) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -8830,7 +9236,7 @@ exports.assert = assert;
 	return CryptoJS.SHA224;
 
 }));
-},{"./core":21,"./sha256":47}],47:[function(_dereq_,module,exports){
+},{"./core":22,"./sha256":48}],48:[function(_dereq_,module,exports){
 ;(function (root, factory) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -9030,7 +9436,7 @@ exports.assert = assert;
 	return CryptoJS.SHA256;
 
 }));
-},{"./core":21}],48:[function(_dereq_,module,exports){
+},{"./core":22}],49:[function(_dereq_,module,exports){
 ;(function (root, factory, undef) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -9354,7 +9760,7 @@ exports.assert = assert;
 	return CryptoJS.SHA3;
 
 }));
-},{"./core":21,"./x64-core":52}],49:[function(_dereq_,module,exports){
+},{"./core":22,"./x64-core":53}],50:[function(_dereq_,module,exports){
 ;(function (root, factory, undef) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -9438,7 +9844,7 @@ exports.assert = assert;
 	return CryptoJS.SHA384;
 
 }));
-},{"./core":21,"./sha512":50,"./x64-core":52}],50:[function(_dereq_,module,exports){
+},{"./core":22,"./sha512":51,"./x64-core":53}],51:[function(_dereq_,module,exports){
 ;(function (root, factory, undef) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -9762,7 +10168,7 @@ exports.assert = assert;
 	return CryptoJS.SHA512;
 
 }));
-},{"./core":21,"./x64-core":52}],51:[function(_dereq_,module,exports){
+},{"./core":22,"./x64-core":53}],52:[function(_dereq_,module,exports){
 ;(function (root, factory, undef) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -10533,7 +10939,7 @@ exports.assert = assert;
 	return CryptoJS.TripleDES;
 
 }));
-},{"./cipher-core":20,"./core":21,"./enc-base64":22,"./evpkdf":24,"./md5":29}],52:[function(_dereq_,module,exports){
+},{"./cipher-core":21,"./core":22,"./enc-base64":23,"./evpkdf":25,"./md5":30}],53:[function(_dereq_,module,exports){
 ;(function (root, factory) {
 	if (typeof exports === "object") {
 		// CommonJS
@@ -10838,7 +11244,7 @@ exports.assert = assert;
 	return CryptoJS;
 
 }));
-},{"./core":21}],53:[function(_dereq_,module,exports){
+},{"./core":22}],54:[function(_dereq_,module,exports){
 /** @license MIT License (c) copyright 2013-2014 original author or authors */
 
 /**
@@ -10952,7 +11358,7 @@ define(function(_dereq_) {
 
 
 
-},{"./lib/liftAll":67,"./when":76}],54:[function(_dereq_,module,exports){
+},{"./lib/liftAll":68,"./when":77}],55:[function(_dereq_,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -10971,7 +11377,7 @@ define(function (_dereq_) {
 });
 })(typeof define === 'function' && define.amd ? define : function (factory) { module.exports = factory(_dereq_); });
 
-},{"./async":57,"./makePromise":68,"./scheduler":69}],55:[function(_dereq_,module,exports){
+},{"./async":58,"./makePromise":69,"./scheduler":70}],56:[function(_dereq_,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -11043,7 +11449,7 @@ define(function() {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
-},{}],56:[function(_dereq_,module,exports){
+},{}],57:[function(_dereq_,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -11071,7 +11477,7 @@ define(function() {
 	return TimeoutError;
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
-},{}],57:[function(_dereq_,module,exports){
+},{}],58:[function(_dereq_,module,exports){
 (function (process){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
@@ -11136,7 +11542,7 @@ define(function(_dereq_) {
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(_dereq_); }));
 
 }).call(this,_dereq_("c:\\Users\\oberstet\\AppData\\Roaming\\npm\\node_modules\\browserify\\node_modules\\insert-module-globals\\node_modules\\process\\browser.js"))
-},{"c:\\Users\\oberstet\\AppData\\Roaming\\npm\\node_modules\\browserify\\node_modules\\insert-module-globals\\node_modules\\process\\browser.js":1}],58:[function(_dereq_,module,exports){
+},{"c:\\Users\\oberstet\\AppData\\Roaming\\npm\\node_modules\\browserify\\node_modules\\insert-module-globals\\node_modules\\process\\browser.js":1}],59:[function(_dereq_,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -11331,7 +11737,7 @@ define(function() {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
-},{}],59:[function(_dereq_,module,exports){
+},{}],60:[function(_dereq_,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -11482,7 +11888,7 @@ define(function() {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
-},{}],60:[function(_dereq_,module,exports){
+},{}],61:[function(_dereq_,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -11505,7 +11911,7 @@ define(function() {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
-},{}],61:[function(_dereq_,module,exports){
+},{}],62:[function(_dereq_,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -11525,7 +11931,7 @@ define(function() {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
-},{}],62:[function(_dereq_,module,exports){
+},{}],63:[function(_dereq_,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -11590,7 +11996,7 @@ define(function() {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
-},{}],63:[function(_dereq_,module,exports){
+},{}],64:[function(_dereq_,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -11615,7 +12021,7 @@ define(function() {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
-},{}],64:[function(_dereq_,module,exports){
+},{}],65:[function(_dereq_,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -11685,7 +12091,7 @@ define(function(_dereq_) {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(_dereq_); }));
 
-},{"../TimeoutError":56,"../timer":70}],65:[function(_dereq_,module,exports){
+},{"../TimeoutError":57,"../timer":71}],66:[function(_dereq_,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -11789,7 +12195,7 @@ define(function(_dereq_) {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(_dereq_); }));
 
-},{"../timer":70}],66:[function(_dereq_,module,exports){
+},{"../timer":71}],67:[function(_dereq_,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -11823,7 +12229,7 @@ define(function() {
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
 
-},{}],67:[function(_dereq_,module,exports){
+},{}],68:[function(_dereq_,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -11853,7 +12259,7 @@ define(function() {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
-},{}],68:[function(_dereq_,module,exports){
+},{}],69:[function(_dereq_,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -12701,7 +13107,7 @@ define(function() {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
-},{}],69:[function(_dereq_,module,exports){
+},{}],70:[function(_dereq_,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -12773,7 +13179,7 @@ define(function(_dereq_) {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(_dereq_); }));
 
-},{"./Queue":55}],70:[function(_dereq_,module,exports){
+},{"./Queue":56}],71:[function(_dereq_,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -12802,7 +13208,7 @@ define(function(_dereq_) {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(_dereq_); }));
 
-},{}],71:[function(_dereq_,module,exports){
+},{}],72:[function(_dereq_,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -12821,7 +13227,7 @@ define(function(_dereq_) {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(_dereq_); }));
 
-},{"./monitor/ConsoleReporter":72,"./monitor/PromiseMonitor":73}],72:[function(_dereq_,module,exports){
+},{"./monitor/ConsoleReporter":73,"./monitor/PromiseMonitor":74}],73:[function(_dereq_,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -12921,7 +13327,7 @@ define(function(_dereq_) {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(_dereq_); }));
 
-},{"./error":75}],73:[function(_dereq_,module,exports){
+},{"./error":76}],74:[function(_dereq_,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -13120,7 +13526,7 @@ define(function(_dereq_) {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(_dereq_); }));
 
-},{"../lib/timer":70,"./error":75}],74:[function(_dereq_,module,exports){
+},{"../lib/timer":71,"./error":76}],75:[function(_dereq_,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -13136,7 +13542,7 @@ define(function(_dereq_) {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(_dereq_); }));
 
-},{"../monitor":71,"../when":76}],75:[function(_dereq_,module,exports){
+},{"../monitor":72,"../when":77}],76:[function(_dereq_,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -13224,7 +13630,7 @@ define(function() {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
-},{}],76:[function(_dereq_,module,exports){
+},{}],77:[function(_dereq_,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 
 /**
@@ -13483,7 +13889,7 @@ define(function (_dereq_) {
 });
 })(typeof define === 'function' && define.amd ? define : function (factory) { module.exports = factory(_dereq_); });
 
-},{"./lib/Promise":54,"./lib/TimeoutError":56,"./lib/decorators/array":58,"./lib/decorators/flow":59,"./lib/decorators/fold":60,"./lib/decorators/inspect":61,"./lib/decorators/iterate":62,"./lib/decorators/progress":63,"./lib/decorators/timed":64,"./lib/decorators/unhandledRejection":65,"./lib/decorators/with":66}],77:[function(_dereq_,module,exports){
+},{"./lib/Promise":55,"./lib/TimeoutError":57,"./lib/decorators/array":59,"./lib/decorators/flow":60,"./lib/decorators/fold":61,"./lib/decorators/inspect":62,"./lib/decorators/iterate":63,"./lib/decorators/progress":64,"./lib/decorators/timed":65,"./lib/decorators/unhandledRejection":66,"./lib/decorators/with":67}],78:[function(_dereq_,module,exports){
 
 /**
  * Module dependencies.
@@ -13528,10 +13934,10 @@ function ws(uri, protocols, opts) {
 
 if (WebSocket) ws.prototype = WebSocket.prototype;
 
-},{}],78:[function(_dereq_,module,exports){
+},{}],79:[function(_dereq_,module,exports){
 module.exports={
    "name": "autobahn",
-   "version": "0.9.4-2",
+   "version": "0.9.5",
    "description": "An implementation of The Web Application Messaging Protocol (WAMP).",
    "main": "index.js",
    "scripts": {

@@ -15036,9 +15036,12 @@ if (WebSocket) ws.prototype = WebSocket.prototype;
 },{}],80:[function(require,module,exports){
 module.exports={
   "name": "autobahn",
-  "version": "0.9.7",
+  "version": "0.9.8",
   "description": "An implementation of The Web Application Messaging Protocol (WAMP).",
   "main": "index.js",
+  "browser": {
+    "lib/transport/rawsocket.js": false
+  },
   "scripts": {
     "test": "nodeunit test/test.js"
   },

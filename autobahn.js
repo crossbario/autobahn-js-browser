@@ -538,7 +538,7 @@ Connection.prototype.open = function () {
          self._connect_successes += 1;
 
          // start WAMP session
-         self._session.join(self._options.realm, self._options.authmethods, self._options.authid);
+         self._session.join(self._options.realm, self._options.authmethods, self._options.authid, self._options.authextra);
       };
 
       self._session.onjoin = function (details) {
@@ -3928,7 +3928,7 @@ Session.prototype.log = function () {
 };
 
 
-Session.prototype.join = function (realm, authmethods, authid) {
+Session.prototype.join = function (realm, authmethods, authid, authextra) {
 
    util.assert(typeof realm === 'string', "Session.join: <realm> must be a string");
    util.assert(!authmethods || Array.isArray(authmethods), "Session.join: <authmethods> must be an array []");
@@ -3951,6 +3951,9 @@ Session.prototype.join = function (realm, authmethods, authid) {
    }
    if (authid) {
       details.authid = authid;
+   }
+   if (authextra) {
+      details.authextra = authextra;
    }
 
    var msg = [MSG_TYPE.HELLO, realm, details];
@@ -5673,7 +5676,7 @@ exports.defaults = defaults;
 },{"./log.js":6,"when":120}],21:[function(require,module,exports){
 module.exports={
     "name": "autobahn",
-    "version": "0.11.1",
+    "version": "0.11.2",
     "description": "An implementation of The Web Application Messaging Protocol (WAMP).",
     "main": "index.js",
     "scripts": {

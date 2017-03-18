@@ -10,7 +10,7 @@ Install with [bower](http://bower.io/):
 
 Add a `<script>` tag to your `index.html`:
 
-	<script src="/bower_components/autobahn/autobahn.min.js"></script>
+	<script src="/bower_components/autobahnjs/autobahn.min.js"></script>
 
 To list available versions of AutobahnJS:
 

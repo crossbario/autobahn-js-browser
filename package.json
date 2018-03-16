@@ -1,5 +1,19 @@
 {
-    "name": "autobahn",
-    "version": "18.3.1",
-    "main": "autobahn.js"
+  "name": "autobahn-browser",
+  "version": "18.3.1",
+  "description": "[BROWSER BUILD] An implementation of The Web Application Messaging Protocol (WAMP).",
+  "main": "autobahn.min.js",
+
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/crossbario/autobahn-js-browser.git"
+  },
+  "keywords": [
+    "WAMP",
+    "WebSocket",
+    "RPC",
+    "PubSub"
+  ],
+  "author": "Crossbar.io Technologies GmbH",
+  "license": "MIT"
 }

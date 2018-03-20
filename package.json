@@ -1,6 +1,6 @@
 {
   "name": "autobahn-browser",
-  "version": "18.3.1",
+  "version": "18.3.2",
   "description": "[BROWSER BUILD] An implementation of The Web Application Messaging Protocol (WAMP).",
   "main": "autobahn.min.js",
 

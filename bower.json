@@ -1,6 +1,6 @@
 {
    "name": "autobahn",
-   "version": "18.3.2",
+   "version": "18.10.1",
    "main": "./autobahn.js",
    "dependencies": {
    }

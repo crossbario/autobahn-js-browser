@@ -199,7 +199,7 @@ function create_connection (config) {
 
 exports.create_connection = create_connection;
 
-},{"../connection.js":6,"../log.js":7,"../util.js":21,"tweetnacl":90}],3:[function(require,module,exports){
+},{"../connection.js":6,"../log.js":7,"../util.js":21,"tweetnacl":89}],3:[function(require,module,exports){
 ///////////////////////////////////////////////////////////////////////////////
 //
 //  AutobahnJS - http://autobahn.ws, http://wamp.ws
@@ -253,7 +253,7 @@ function auth(session, user, extra) {
 
 exports.auth = auth;
 
-},{"when":118,"when/function":94}],4:[function(require,module,exports){
+},{"when":117,"when/function":93}],4:[function(require,module,exports){
 (function (global){
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -329,7 +329,7 @@ exports.util = util;
 exports.log = log;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../package.json":119,"./auth/cra.js":1,"./auth/cryptosign.js":2,"./auth/persona.js":3,"./configure.js":5,"./connection.js":6,"./log.js":7,"./polyfill.js":8,"./serializer.js":16,"./session.js":17,"./util.js":21,"cbor":28,"msgpack5":71,"tweetnacl":90,"when":118,"when/monitor/console":116}],5:[function(require,module,exports){
+},{"../package.json":118,"./auth/cra.js":1,"./auth/cryptosign.js":2,"./auth/persona.js":3,"./configure.js":5,"./connection.js":6,"./log.js":7,"./polyfill.js":8,"./serializer.js":16,"./session.js":17,"./util.js":21,"cbor":28,"msgpack5":71,"tweetnacl":89,"when":117,"when/monitor/console":115}],5:[function(require,module,exports){
 ///////////////////////////////////////////////////////////////////////////////
 //
 //  AutobahnJS - http://autobahn.ws, http://wamp.ws
@@ -896,7 +896,7 @@ Object.defineProperty(Connection.prototype, "isRetrying", {
 exports.Connection = Connection;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./autobahn.js":4,"./log.js":7,"./session.js":17,"./util.js":21,"when":118}],7:[function(require,module,exports){
+},{"./autobahn.js":4,"./log.js":7,"./session.js":17,"./util.js":21,"when":117}],7:[function(require,module,exports){
 (function (global){
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -4581,7 +4581,7 @@ exports.Registration = Registration;
 exports.Publication = Publication;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./log.js":7,"./util.js":21,"when":118,"when/function":94}],18:[function(require,module,exports){
+},{"./log.js":7,"./util.js":21,"when":117,"when/function":93}],18:[function(require,module,exports){
 ///////////////////////////////////////////////////////////////////////////////
 //
 //  AutobahnJS - http://autobahn.ws, http://wamp.ws
@@ -4788,7 +4788,7 @@ Factory.prototype.create = function () {
 
 exports.Factory = Factory;
 
-},{"../log.js":7,"../serializer.js":16,"../util.js":21,"when":118}],19:[function(require,module,exports){
+},{"../log.js":7,"../serializer.js":16,"../util.js":21,"when":117}],19:[function(require,module,exports){
 (function (global,Buffer){
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -5799,7 +5799,7 @@ Factory.prototype.create = function () {
 exports.Factory = Factory;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../log.js":7,"../serializer.js":16,"../util.js":21,"randombytes":77,"ws":28}],21:[function(require,module,exports){
+},{"../log.js":7,"../serializer.js":16,"../util.js":21,"randombytes":28,"ws":28}],21:[function(require,module,exports){
 (function (global){
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -6100,7 +6100,7 @@ exports.defaults = defaults;
 exports.new_global_id = new_global_id;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./log.js":7,"when":118}],22:[function(require,module,exports){
+},{"./log.js":7,"when":117}],22:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -7751,7 +7751,7 @@ BufferList.prototype._match = function(offset, search) {
 
 module.exports = BufferList
 
-},{"readable-stream":86,"safe-buffer":87,"util":93}],28:[function(require,module,exports){
+},{"readable-stream":85,"safe-buffer":86,"util":92}],28:[function(require,module,exports){
 
 },{}],29:[function(require,module,exports){
 arguments[4][28][0].apply(exports,arguments)
@@ -16982,7 +16982,7 @@ function msgpack (options) {
 
 module.exports = msgpack
 
-},{"./lib/decoder":72,"./lib/encoder":73,"./lib/streams":74,"assert":22,"bl":27,"safe-buffer":87}],72:[function(require,module,exports){
+},{"./lib/decoder":72,"./lib/encoder":73,"./lib/streams":74,"assert":22,"bl":27,"safe-buffer":86}],72:[function(require,module,exports){
 'use strict'
 
 var bl = require('bl')
@@ -17420,7 +17420,7 @@ module.exports = function buildDecode (decodingTypes) {
 
 module.exports.IncompleteBufferError = IncompleteBufferError
 
-},{"bl":27,"util":93}],73:[function(require,module,exports){
+},{"bl":27,"util":92}],73:[function(require,module,exports){
 'use strict'
 
 var Buffer = require('safe-buffer').Buffer
@@ -17765,7 +17765,7 @@ function encodeFloat (obj, forceFloat64) {
   return buf
 }
 
-},{"bl":27,"safe-buffer":87}],74:[function(require,module,exports){
+},{"bl":27,"safe-buffer":86}],74:[function(require,module,exports){
 'use strict'
 
 var Transform = require('readable-stream').Transform
@@ -17857,7 +17857,7 @@ Decoder.prototype._transform = function (buf, enc, done) {
 module.exports.decoder = Decoder
 module.exports.encoder = Encoder
 
-},{"bl":27,"inherits":68,"readable-stream":86}],75:[function(require,module,exports){
+},{"bl":27,"inherits":68,"readable-stream":85}],75:[function(require,module,exports){
 (function (process){
 'use strict';
 
@@ -18092,48 +18092,6 @@ process.chdir = function (dir) {
 process.umask = function() { return 0; };
 
 },{}],77:[function(require,module,exports){
-(function (process,global){
-'use strict'
-
-function oldBrowser () {
-  throw new Error('Secure random number generation is not supported by this browser.\nUse Chrome, Firefox or Internet Explorer 11')
-}
-
-var Buffer = require('safe-buffer').Buffer
-var crypto = global.crypto || global.msCrypto
-
-if (crypto && crypto.getRandomValues) {
-  module.exports = randomBytes
-} else {
-  module.exports = oldBrowser
-}
-
-function randomBytes (size, cb) {
-  // phantomjs needs to throw
-  if (size > 65536) throw new Error('requested too many random bytes')
-  // in case browserify  isn't using the Uint8Array version
-  var rawBytes = new global.Uint8Array(size)
-
-  // This will not work in older browsers.
-  // See https://developer.mozilla.org/en-US/docs/Web/API/window.crypto.getRandomValues
-  if (size > 0) {  // getRandomValues fails on IE if size == 0
-    crypto.getRandomValues(rawBytes)
-  }
-
-  // XXX: phantomjs doesn't like a buffer being passed here
-  var bytes = Buffer.from(rawBytes.buffer)
-
-  if (typeof cb === 'function') {
-    return process.nextTick(function () {
-      cb(null, bytes)
-    })
-  }
-
-  return bytes
-}
-
-}).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"_process":76,"safe-buffer":87}],78:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -18265,7 +18223,7 @@ Duplex.prototype._destroy = function (err, cb) {
 
   pna.nextTick(cb, err);
 };
-},{"./_stream_readable":80,"./_stream_writable":82,"core-util-is":31,"inherits":68,"process-nextick-args":75}],79:[function(require,module,exports){
+},{"./_stream_readable":79,"./_stream_writable":81,"core-util-is":31,"inherits":68,"process-nextick-args":75}],78:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -18313,7 +18271,7 @@ function PassThrough(options) {
 PassThrough.prototype._transform = function (chunk, encoding, cb) {
   cb(null, chunk);
 };
-},{"./_stream_transform":81,"core-util-is":31,"inherits":68}],80:[function(require,module,exports){
+},{"./_stream_transform":80,"core-util-is":31,"inherits":68}],79:[function(require,module,exports){
 (function (process,global){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -19335,7 +19293,7 @@ function indexOf(xs, x) {
   return -1;
 }
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./_stream_duplex":78,"./internal/streams/BufferList":83,"./internal/streams/destroy":84,"./internal/streams/stream":85,"_process":76,"core-util-is":31,"events":66,"inherits":68,"isarray":70,"process-nextick-args":75,"safe-buffer":87,"string_decoder/":88,"util":28}],81:[function(require,module,exports){
+},{"./_stream_duplex":77,"./internal/streams/BufferList":82,"./internal/streams/destroy":83,"./internal/streams/stream":84,"_process":76,"core-util-is":31,"events":66,"inherits":68,"isarray":70,"process-nextick-args":75,"safe-buffer":86,"string_decoder/":87,"util":28}],80:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -19550,7 +19508,7 @@ function done(stream, er, data) {
 
   return stream.push(null);
 }
-},{"./_stream_duplex":78,"core-util-is":31,"inherits":68}],82:[function(require,module,exports){
+},{"./_stream_duplex":77,"core-util-is":31,"inherits":68}],81:[function(require,module,exports){
 (function (process,global,setImmediate){
 // Copyright Joyent, Inc. and other Node contributors.
 //
@@ -20240,7 +20198,7 @@ Writable.prototype._destroy = function (err, cb) {
   cb(err);
 };
 }).call(this,require('_process'),typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {},require("timers").setImmediate)
-},{"./_stream_duplex":78,"./internal/streams/destroy":84,"./internal/streams/stream":85,"_process":76,"core-util-is":31,"inherits":68,"process-nextick-args":75,"safe-buffer":87,"timers":89,"util-deprecate":91}],83:[function(require,module,exports){
+},{"./_stream_duplex":77,"./internal/streams/destroy":83,"./internal/streams/stream":84,"_process":76,"core-util-is":31,"inherits":68,"process-nextick-args":75,"safe-buffer":86,"timers":88,"util-deprecate":90}],82:[function(require,module,exports){
 'use strict';
 
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
@@ -20320,7 +20278,7 @@ if (util && util.inspect && util.inspect.custom) {
     return this.constructor.name + ' ' + obj;
   };
 }
-},{"safe-buffer":87,"util":28}],84:[function(require,module,exports){
+},{"safe-buffer":86,"util":28}],83:[function(require,module,exports){
 'use strict';
 
 /*<replacement>*/
@@ -20395,10 +20353,10 @@ module.exports = {
   destroy: destroy,
   undestroy: undestroy
 };
-},{"process-nextick-args":75}],85:[function(require,module,exports){
+},{"process-nextick-args":75}],84:[function(require,module,exports){
 module.exports = require('events').EventEmitter;
 
-},{"events":66}],86:[function(require,module,exports){
+},{"events":66}],85:[function(require,module,exports){
 exports = module.exports = require('./lib/_stream_readable.js');
 exports.Stream = exports;
 exports.Readable = exports;
@@ -20407,7 +20365,7 @@ exports.Duplex = require('./lib/_stream_duplex.js');
 exports.Transform = require('./lib/_stream_transform.js');
 exports.PassThrough = require('./lib/_stream_passthrough.js');
 
-},{"./lib/_stream_duplex.js":78,"./lib/_stream_passthrough.js":79,"./lib/_stream_readable.js":80,"./lib/_stream_transform.js":81,"./lib/_stream_writable.js":82}],87:[function(require,module,exports){
+},{"./lib/_stream_duplex.js":77,"./lib/_stream_passthrough.js":78,"./lib/_stream_readable.js":79,"./lib/_stream_transform.js":80,"./lib/_stream_writable.js":81}],86:[function(require,module,exports){
 /* eslint-disable node/no-deprecated-api */
 var buffer = require('buffer')
 var Buffer = buffer.Buffer
@@ -20471,7 +20429,7 @@ SafeBuffer.allocUnsafeSlow = function (size) {
   return buffer.SlowBuffer(size)
 }
 
-},{"buffer":30}],88:[function(require,module,exports){
+},{"buffer":30}],87:[function(require,module,exports){
 // Copyright Joyent, Inc. and other Node contributors.
 //
 // Permission is hereby granted, free of charge, to any person obtaining a
@@ -20768,7 +20726,7 @@ function simpleWrite(buf) {
 function simpleEnd(buf) {
   return buf && buf.length ? this.write(buf) : '';
 }
-},{"safe-buffer":87}],89:[function(require,module,exports){
+},{"safe-buffer":86}],88:[function(require,module,exports){
 (function (setImmediate,clearImmediate){
 var nextTick = require('process/browser.js').nextTick;
 var apply = Function.prototype.apply;
@@ -20847,7 +20805,7 @@ exports.clearImmediate = typeof clearImmediate === "function" ? clearImmediate :
   delete immediateIds[id];
 };
 }).call(this,require("timers").setImmediate,require("timers").clearImmediate)
-},{"process/browser.js":76,"timers":89}],90:[function(require,module,exports){
+},{"process/browser.js":76,"timers":88}],89:[function(require,module,exports){
 (function(nacl) {
 'use strict';
 
@@ -23226,7 +23184,7 @@ nacl.setPRNG = function(fn) {
 
 })(typeof module !== 'undefined' && module.exports ? module.exports : (self.nacl = self.nacl || {}));
 
-},{"crypto":28}],91:[function(require,module,exports){
+},{"crypto":28}],90:[function(require,module,exports){
 (function (global){
 
 /**
@@ -23297,11 +23255,11 @@ function config (name) {
 }
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{}],92:[function(require,module,exports){
+},{}],91:[function(require,module,exports){
 arguments[4][24][0].apply(exports,arguments)
-},{"dup":24}],93:[function(require,module,exports){
+},{"dup":24}],92:[function(require,module,exports){
 arguments[4][25][0].apply(exports,arguments)
-},{"./support/isBuffer":92,"_process":76,"dup":25,"inherits":68}],94:[function(require,module,exports){
+},{"./support/isBuffer":91,"_process":76,"dup":25,"inherits":68}],93:[function(require,module,exports){
 /** @license MIT License (c) copyright 2013-2014 original author or authors */
 
 /**
@@ -23407,7 +23365,7 @@ define(function(require) {
 
 
 
-},{"./lib/apply":98,"./lib/liftAll":110,"./when":118}],95:[function(require,module,exports){
+},{"./lib/apply":97,"./lib/liftAll":109,"./when":117}],94:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -23426,7 +23384,7 @@ define(function (require) {
 });
 })(typeof define === 'function' && define.amd ? define : function (factory) { module.exports = factory(require); });
 
-},{"./Scheduler":96,"./env":108,"./makePromise":111}],96:[function(require,module,exports){
+},{"./Scheduler":95,"./env":107,"./makePromise":110}],95:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -23508,7 +23466,7 @@ define(function() {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
-},{}],97:[function(require,module,exports){
+},{}],96:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -23536,7 +23494,7 @@ define(function() {
 	return TimeoutError;
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
-},{}],98:[function(require,module,exports){
+},{}],97:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -23593,7 +23551,7 @@ define(function() {
 
 
 
-},{}],99:[function(require,module,exports){
+},{}],98:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -23894,7 +23852,7 @@ define(function(require) {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(require); }));
 
-},{"../apply":98,"../state":112}],100:[function(require,module,exports){
+},{"../apply":97,"../state":111}],99:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -24056,7 +24014,7 @@ define(function() {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
-},{}],101:[function(require,module,exports){
+},{}],100:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -24085,7 +24043,7 @@ define(function() {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
-},{}],102:[function(require,module,exports){
+},{}],101:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -24107,7 +24065,7 @@ define(function(require) {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(require); }));
 
-},{"../state":112}],103:[function(require,module,exports){
+},{"../state":111}],102:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -24174,7 +24132,7 @@ define(function() {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
-},{}],104:[function(require,module,exports){
+},{}],103:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -24200,7 +24158,7 @@ define(function() {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
-},{}],105:[function(require,module,exports){
+},{}],104:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -24280,7 +24238,7 @@ define(function(require) {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(require); }));
 
-},{"../TimeoutError":97,"../env":108}],106:[function(require,module,exports){
+},{"../TimeoutError":96,"../env":107}],105:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -24368,7 +24326,7 @@ define(function(require) {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(require); }));
 
-},{"../env":108,"../format":109}],107:[function(require,module,exports){
+},{"../env":107,"../format":108}],106:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -24408,7 +24366,7 @@ define(function() {
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
 
-},{}],108:[function(require,module,exports){
+},{}],107:[function(require,module,exports){
 (function (process){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
@@ -24485,7 +24443,7 @@ define(function(require) {
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(require); }));
 
 }).call(this,require('_process'))
-},{"_process":76}],109:[function(require,module,exports){
+},{"_process":76}],108:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -24543,7 +24501,7 @@ define(function() {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
-},{}],110:[function(require,module,exports){
+},{}],109:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -24573,7 +24531,7 @@ define(function() {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
-},{}],111:[function(require,module,exports){
+},{}],110:[function(require,module,exports){
 (function (process){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
@@ -25532,7 +25490,7 @@ define(function() {
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
 }).call(this,require('_process'))
-},{"_process":76}],112:[function(require,module,exports){
+},{"_process":76}],111:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -25569,7 +25527,7 @@ define(function() {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
-},{}],113:[function(require,module,exports){
+},{}],112:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -25588,7 +25546,7 @@ define(function(require) {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(require); }));
 
-},{"./monitor/ConsoleReporter":114,"./monitor/PromiseMonitor":115}],114:[function(require,module,exports){
+},{"./monitor/ConsoleReporter":113,"./monitor/PromiseMonitor":114}],113:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -25696,7 +25654,7 @@ define(function(require) {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(require); }));
 
-},{"./error":117}],115:[function(require,module,exports){
+},{"./error":116}],114:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -25895,7 +25853,7 @@ define(function(require) {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(require); }));
 
-},{"../lib/env":108,"./error":117}],116:[function(require,module,exports){
+},{"../lib/env":107,"./error":116}],115:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -25911,7 +25869,7 @@ define(function(require) {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(require); }));
 
-},{"../monitor":113,"../when":118}],117:[function(require,module,exports){
+},{"../monitor":112,"../when":117}],116:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -25999,7 +25957,7 @@ define(function() {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
-},{}],118:[function(require,module,exports){
+},{}],117:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 
 /**
@@ -26229,10 +26187,10 @@ define(function (require) {
 });
 })(typeof define === 'function' && define.amd ? define : function (factory) { module.exports = factory(require); });
 
-},{"./lib/Promise":95,"./lib/TimeoutError":97,"./lib/apply":98,"./lib/decorators/array":99,"./lib/decorators/flow":100,"./lib/decorators/fold":101,"./lib/decorators/inspect":102,"./lib/decorators/iterate":103,"./lib/decorators/progress":104,"./lib/decorators/timed":105,"./lib/decorators/unhandledRejection":106,"./lib/decorators/with":107}],119:[function(require,module,exports){
+},{"./lib/Promise":94,"./lib/TimeoutError":96,"./lib/apply":97,"./lib/decorators/array":98,"./lib/decorators/flow":99,"./lib/decorators/fold":100,"./lib/decorators/inspect":101,"./lib/decorators/iterate":102,"./lib/decorators/progress":103,"./lib/decorators/timed":104,"./lib/decorators/unhandledRejection":105,"./lib/decorators/with":106}],118:[function(require,module,exports){
 module.exports={
   "name": "autobahn",
-  "version": "18.10.1",
+  "version": "18.10.2",
   "description": "An implementation of The Web Application Messaging Protocol (WAMP).",
   "main": "index.js",
   "scripts": {
@@ -26244,9 +26202,8 @@ module.exports={
   "dependencies": {
     "cbor": ">= 3.0.0",
     "crypto-js": ">=3.1.8",
-    "md5": "^2.2.1",
     "msgpack5": ">= 3.6.0",
-    "s3": "^4.4.0",
+    "randombytes": ">=2.0.6",
     "tweetnacl": ">= 0.14.3",
     "when": ">= 3.7.7",
     "ws": ">= 1.1.4"
@@ -26264,7 +26221,8 @@ module.exports={
   "browser": {
     "ws": false,
     "lib/transport/rawsocket.js": false,
-    "cbor": false
+    "cbor": false,
+    "randombytes": false
   },
   "repository": {
     "type": "git",

@@ -535,9 +535,9 @@ var Connection = function (options) {
 
 
 Connection.prototype._create_transport = function () {
-   
+
    var self = this;
-   
+
    for (var i = 0; i < this._transport_factories.length; ++i) {
       var transport_factory = this._transport_factories[i];
       log.debug("trying to create WAMP transport of type: " + transport_factory.type);
@@ -561,9 +561,9 @@ Connection.prototype._create_transport = function () {
 Connection.prototype._init_transport_factories = function () {
     // WAMP transport
     //
-    
+
     var self = this;
-   
+
     var transports, transport_options, transport_factory, transport_factory_klass;
 
     util.assert(this._options.transports, "No transport.factory specified");
@@ -5592,7 +5592,7 @@ Factory.prototype.create = function () {
    // running in Node.js
    //
    if (global.process && global.process.versions.node
-       && !global.process.versions.hasOwnProperty('electron')) {
+       && !global.process.versions.hasOwnProperty('electron') && !global.process.__nwjs) {
 
       (function () {
 
@@ -5600,11 +5600,11 @@ Factory.prototype.create = function () {
          var randomBytes = require('randombytes');
          var websocket;
 
-         var options = { 
+         var options = {
             agent : self._options.agent,
             headers : self._options.headers
          };
-         
+
          var protocols;
          if (self._options.protocols) {
             protocols = self._options.protocols;
@@ -5623,7 +5623,7 @@ Factory.prototype.create = function () {
             options.key = self._options.tlsConfiguration.key;
             options.rejectUnauthorized = false;
          }
-         
+
          websocket = new WebSocket(self._options.url, protocols, options);
 
          transport.send = function (msg) {

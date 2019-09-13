@@ -8180,7 +8180,7 @@ function hexSlice (buf, start, end) {
 
   var out = ''
   for (var i = start; i < end; ++i) {
-    out += toHex(buf[i])
+    out += hexSliceLookupTable[buf[i]]
   }
   return out
 }
@@ -8766,11 +8766,6 @@ function base64clean (str) {
   return str
 }
 
-function toHex (n) {
-  if (n < 16) return '0' + n.toString(16)
-  return n.toString(16)
-}
-
 function utf8ToBytes (string, units) {
   units = units || Infinity
   var codePoint
@@ -8900,6 +8895,20 @@ function numberIsNaN (obj) {
   // For IE11 support
   return obj !== obj // eslint-disable-line no-self-compare
 }
+
+// Create lookup table for `toString('hex')`
+// See: https://github.com/feross/buffer/issues/219
+var hexSliceLookupTable = (function () {
+  var alphabet = '0123456789abcdef'
+  var table = new Array(256)
+  for (var i = 0; i < 16; ++i) {
+    var i16 = i * 16
+    for (var j = 0; j < 16; ++j) {
+      table[i16 + j] = alphabet[i] + alphabet[j]
+    }
+  }
+  return table
+})()
 
 }).call(this,require("buffer").Buffer)
 },{"base64-js":25,"buffer":28,"ieee754":65}],29:[function(require,module,exports){
@@ -25748,7 +25757,7 @@ define(function (require) {
 },{"./lib/Promise":96,"./lib/TimeoutError":98,"./lib/apply":99,"./lib/decorators/array":100,"./lib/decorators/flow":101,"./lib/decorators/fold":102,"./lib/decorators/inspect":103,"./lib/decorators/iterate":104,"./lib/decorators/progress":105,"./lib/decorators/timed":106,"./lib/decorators/unhandledRejection":107,"./lib/decorators/with":108}],120:[function(require,module,exports){
 module.exports={
   "name": "autobahn",
-  "version": "19.9.1",
+  "version": "19.9.2",
   "description": "An implementation of The Web Application Messaging Protocol (WAMP).",
   "main": "index.js",
   "files": [

@@ -4856,15 +4856,65 @@ Factory.prototype.create = function () {
       protocol: null
    };
 
+   if ("WebSocket" in global) {
+      (function () {
 
-   // Test below used to be via the 'window' object in the browser.
-   // This fails when running in a Web worker.
-   //
-   // running in Node.js
-   //
-   if (global.process && global.process.versions.node
-       && !global.process.versions.hasOwnProperty('electron') && !global.process.__nwjs) {
+         var websocket;
 
+         if (self._options.protocols) {
+            websocket = new global.WebSocket(self._options.url, self._options.protocols);
+         } else {
+            websocket = new global.WebSocket(self._options.url);
+         }
+         websocket.binaryType = 'arraybuffer';
+
+         websocket.onmessage = function (evt) {
+            log.debug("WebSocket transport receive", evt.data);
+
+            var msg = transport.serializer.unserialize(evt.data);
+            transport.onmessage(msg);
+         }
+
+         websocket.onopen = function () {
+            var serializer_part = websocket.protocol.split('.')[2];
+            for (var index in self._options.serializers) {
+               var serializer = self._options.serializers[index];
+               if (serializer.SERIALIZER_ID == serializer_part) {
+                  transport.serializer = serializer;
+                  break;
+               }
+            }
+
+            transport.info.protocol = websocket.protocol;
+            transport.onopen();
+         }
+
+         websocket.onclose = function (evt) {
+            var details = {
+               code: evt.code,
+               reason: evt.message,
+               wasClean: evt.wasClean
+            }
+            transport.onclose(details);
+         }
+
+         // do NOT do the following, since that will make
+         // transport.onclose() fire twice (browsers already fire
+         // websocket.onclose() for errors also)
+         //websocket.onerror = websocket.onclose;
+
+         transport.send = function (msg) {
+            var payload = transport.serializer.serialize(msg);
+            log.debug("WebSocket transport send", payload);
+            websocket.send(payload);
+         }
+
+         transport.close = function (code, reason) {
+            websocket.close(code, reason);
+         };
+
+      })();
+   } else {
       (function () {
 
          var WebSocket = require('ws'); // https://github.com/websockets/ws
@@ -4907,7 +4957,7 @@ Factory.prototype.create = function () {
                    "'ca' 'cert' and 'key' parameters.");
             }
          } else {
-             log.debug('Not using TLS Client Authentication.');
+            log.debug('Not using TLS Client Authentication.');
          }
 
          websocket = new WebSocket(self._options.url, protocols, options);
@@ -4979,7 +5029,7 @@ Factory.prototype.create = function () {
          // https://developer.mozilla.org/en-US/docs/Web/API/CloseEvent#Close_codes
          //
          websocket.on('close', function (code, message) {
-             if (auto_ping_interval != null) clearInterval(auto_ping_interval);
+            if (auto_ping_interval != null) clearInterval(auto_ping_interval);
             var details = {
                code: code,
                reason: message,
@@ -4997,83 +5047,6 @@ Factory.prototype.create = function () {
             }
             transport.onclose(details);
          });
-
-      })();
-   //
-   // running in the browser
-   //
-   } else {
-
-      (function () {
-
-         var websocket;
-
-         // Chrome, MSIE, newer Firefox
-         if ("WebSocket" in global) {
-
-            if (self._options.protocols) {
-               websocket = new global.WebSocket(self._options.url, self._options.protocols);
-            } else {
-               websocket = new global.WebSocket(self._options.url);
-            }
-            websocket.binaryType = 'arraybuffer';
-
-         // older versions of Firefox prefix the WebSocket object
-         } else if ("MozWebSocket" in global) {
-
-            if (self._options.protocols) {
-               websocket = new global.MozWebSocket(self._options.url, self._options.protocols);
-            } else {
-               websocket = new global.MozWebSocket(self._options.url);
-            }
-         } else {
-            throw "browser does not support WebSocket or WebSocket in Web workers";
-         }
-
-         websocket.onmessage = function (evt) {
-            log.debug("WebSocket transport receive", evt.data);
-
-            var msg = transport.serializer.unserialize(evt.data);
-            transport.onmessage(msg);
-         }
-
-         websocket.onopen = function () {
-            var serializer_part = websocket.protocol.split('.')[2];
-            for (var index in self._options.serializers) {
-               var serializer = self._options.serializers[index];
-               if (serializer.SERIALIZER_ID == serializer_part) {
-                  transport.serializer = serializer;
-                  break;
-               }
-            }
-
-            transport.info.protocol = websocket.protocol;
-            transport.onopen();
-         }
-
-         websocket.onclose = function (evt) {
-            var details = {
-               code: evt.code,
-               reason: evt.message,
-               wasClean: evt.wasClean
-            }
-            transport.onclose(details);
-         }
-
-         // do NOT do the following, since that will make
-         // transport.onclose() fire twice (browsers already fire
-         // websocket.onclose() for errors also)
-         //websocket.onerror = websocket.onclose;
-
-         transport.send = function (msg) {
-            var payload = transport.serializer.serialize(msg);
-            log.debug("WebSocket transport send", payload);
-            websocket.send(payload);
-         }
-
-         transport.close = function (code, reason) {
-            websocket.close(code, reason);
-         };
 
       })();
    }
@@ -17706,7 +17679,7 @@ var objectKeys = Object.keys || function (obj) {
 module.exports = Duplex;
 
 /*<replacement>*/
-var util = require('core-util-is');
+var util = Object.create(require('core-util-is'));
 util.inherits = require('inherits');
 /*</replacement>*/
 
@@ -17825,7 +17798,7 @@ module.exports = PassThrough;
 var Transform = require('./_stream_transform');
 
 /*<replacement>*/
-var util = require('core-util-is');
+var util = Object.create(require('core-util-is'));
 util.inherits = require('inherits');
 /*</replacement>*/
 
@@ -17908,7 +17881,7 @@ function _isUint8Array(obj) {
 /*</replacement>*/
 
 /*<replacement>*/
-var util = require('core-util-is');
+var util = Object.create(require('core-util-is'));
 util.inherits = require('inherits');
 /*</replacement>*/
 
@@ -18933,7 +18906,7 @@ module.exports = Transform;
 var Duplex = require('./_stream_duplex');
 
 /*<replacement>*/
-var util = require('core-util-is');
+var util = Object.create(require('core-util-is'));
 util.inherits = require('inherits');
 /*</replacement>*/
 
@@ -19145,7 +19118,7 @@ var Duplex;
 Writable.WritableState = WritableState;
 
 /*<replacement>*/
-var util = require('core-util-is');
+var util = Object.create(require('core-util-is'));
 util.inherits = require('inherits');
 /*</replacement>*/
 
@@ -22486,12 +22459,11 @@ function unpackneg(r, p) {
 }
 
 function crypto_sign_open(m, sm, n, pk) {
-  var i, mlen;
+  var i;
   var t = new Uint8Array(32), h = new Uint8Array(64);
   var p = [gf(), gf(), gf(), gf()],
       q = [gf(), gf(), gf(), gf()];
 
-  mlen = -1;
   if (n < 64) return -1;
 
   if (unpackneg(q, pk)) return -1;
@@ -22513,8 +22485,7 @@ function crypto_sign_open(m, sm, n, pk) {
   }
 
   for (i = 0; i < n; i++) m[i] = sm[i + 64];
-  mlen = n;
-  return mlen;
+  return n;
 }
 
 var crypto_secretbox_KEYBYTES = 32,
@@ -22575,7 +22546,23 @@ nacl.lowlevel = {
   crypto_sign_PUBLICKEYBYTES: crypto_sign_PUBLICKEYBYTES,
   crypto_sign_SECRETKEYBYTES: crypto_sign_SECRETKEYBYTES,
   crypto_sign_SEEDBYTES: crypto_sign_SEEDBYTES,
-  crypto_hash_BYTES: crypto_hash_BYTES
+  crypto_hash_BYTES: crypto_hash_BYTES,
+
+  gf: gf,
+  D: D,
+  L: L,
+  pack25519: pack25519,
+  unpack25519: unpack25519,
+  M: M,
+  A: A,
+  S: S,
+  Z: Z,
+  pow2523: pow2523,
+  add: add,
+  set25519: set25519,
+  modL: modL,
+  scalarmult: scalarmult,
+  scalarbase: scalarbase,
 };
 
 /* High-level API */
@@ -25829,15 +25816,18 @@ define(function (require) {
 },{"./lib/Promise":96,"./lib/TimeoutError":98,"./lib/apply":99,"./lib/decorators/array":100,"./lib/decorators/flow":101,"./lib/decorators/fold":102,"./lib/decorators/inspect":103,"./lib/decorators/iterate":104,"./lib/decorators/progress":105,"./lib/decorators/timed":106,"./lib/decorators/unhandledRejection":107,"./lib/decorators/with":108}],120:[function(require,module,exports){
 module.exports={
   "name": "autobahn",
-  "version": "19.10.1",
+  "version": "20.1.1",
   "description": "An implementation of The Web Application Messaging Protocol (WAMP).",
   "main": "index.js",
   "files": [
     "index.js",
     "/lib"
   ],
+  "scripts": {
+    "test": "nodeunit test/test.js"
+  },
   "engines": {
-    "node": ">= 4.2.6"
+    "node": ">= 6.17.1"
   },
   "dependencies": {
     "cbor": ">= 3.0.0",

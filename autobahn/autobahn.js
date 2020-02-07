@@ -25816,7 +25816,7 @@ define(function (require) {
 },{"./lib/Promise":96,"./lib/TimeoutError":98,"./lib/apply":99,"./lib/decorators/array":100,"./lib/decorators/flow":101,"./lib/decorators/fold":102,"./lib/decorators/inspect":103,"./lib/decorators/iterate":104,"./lib/decorators/progress":105,"./lib/decorators/timed":106,"./lib/decorators/unhandledRejection":107,"./lib/decorators/with":108}],120:[function(require,module,exports){
 module.exports={
   "name": "autobahn",
-  "version": "20.1.1",
+  "version": "20.2.1",
   "description": "An implementation of The Web Application Messaging Protocol (WAMP).",
   "main": "index.js",
   "files": [

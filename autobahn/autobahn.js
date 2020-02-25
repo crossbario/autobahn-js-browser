@@ -2958,8 +2958,7 @@ try {
 
    CBORSerializer.prototype.serialize = function (obj) {
       try {
-         var payload = cbor.encode(obj);
-         return payload;
+         return cbor.encode(obj);
       } catch (e) {
          log.warn('CBOR encoding error', e);
          throw e;
@@ -4200,8 +4199,8 @@ Session.prototype.call = function (procedure, args, kwargs, options) {
 
    util.assert(typeof procedure === 'string', "Session.call: <procedure> must be a string");
    util.assert(!args || Array.isArray(args), "Session.call: <args> must be an array []");
-   util.assert(!kwargs || kwargs instanceof Object, "Session.call: <kwargs> must be an object {}");
-   util.assert(!options || options instanceof Object, "Session.call: <options> must be an object {}");
+   util.assert(!kwargs || util.is_object(kwargs), "Session.call: <kwargs> must be an object {}");
+   util.assert(!options || util.is_object(options), "Session.call: <options> must be an object {}");
 
    var self = this;
 
@@ -4273,8 +4272,8 @@ Session.prototype.publish = function (topic, args, kwargs, options) {
 
    util.assert(typeof topic === 'string', "Session.publish: <topic> must be a string");
    util.assert(!args || Array.isArray(args), "Session.publish: <args> must be an array []");
-   util.assert(!kwargs || kwargs instanceof Object, "Session.publish: <kwargs> must be an object {}");
-   util.assert(!options || options instanceof Object, "Session.publish: <options> must be an object {}");
+   util.assert(!kwargs || util.is_object(kwargs), "Session.publish: <kwargs> must be an object {}");
+   util.assert(!options || util.is_object(options), "Session.publish: <options> must be an object {}");
 
    var self = this;
 
@@ -4330,7 +4329,7 @@ Session.prototype.subscribe = function (topic, handler, options) {
 
    util.assert(typeof topic === 'string', "Session.subscribe: <topic> must be a string");
    util.assert(typeof handler === 'function', "Session.subscribe: <handler> must be a function");
-   util.assert(!options || options instanceof Object, "Session.subscribe: <options> must be an object {}");
+   util.assert(!options || util.is_object(options), "Session.subscribe: <options> must be an object {}");
 
    var self = this;
 
@@ -4371,7 +4370,7 @@ Session.prototype.register = function (procedure, endpoint, options) {
 
    util.assert(typeof procedure === 'string', "Session.register: <procedure> must be a string");
    util.assert(typeof endpoint === 'function', "Session.register: <endpoint> must be a function");
-   util.assert(!options || options instanceof Object, "Session.register: <options> must be an object {}");
+   util.assert(!options || util.is_object(options), "Session.register: <options> must be an object {}");
 
    var self = this;
 
@@ -5162,6 +5161,12 @@ var rand_normal = function (mean, sd) {
 
 
 
+var is_object = function(variable) {
+   return !Array.isArray(variable) && (variable instanceof Object || typeof variable === 'object')
+};
+
+
+
 var assert = function (cond, text) {
 	if (cond) {
       return;
@@ -5471,6 +5476,7 @@ var promise = function(d) {
 
 exports.handle_error = handle_error;
 exports.rand_normal = rand_normal;
+exports.is_object = is_object;
 exports.assert = assert;
 exports.http_post = http_post;
 exports.http_get_json = http_get_json;
@@ -25816,7 +25822,7 @@ define(function (require) {
 },{"./lib/Promise":96,"./lib/TimeoutError":98,"./lib/apply":99,"./lib/decorators/array":100,"./lib/decorators/flow":101,"./lib/decorators/fold":102,"./lib/decorators/inspect":103,"./lib/decorators/iterate":104,"./lib/decorators/progress":105,"./lib/decorators/timed":106,"./lib/decorators/unhandledRejection":107,"./lib/decorators/with":108}],120:[function(require,module,exports){
 module.exports={
   "name": "autobahn",
-  "version": "20.2.1",
+  "version": "20.2.2",
   "description": "An implementation of The Web Application Messaging Protocol (WAMP).",
   "main": "index.js",
   "files": [

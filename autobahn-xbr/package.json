@@ -1,19 +1,51 @@
 {
-  "name": "autobahn-xbr-browser",
-  "version": "20.2.2",
-  "description": "[BROWSER BUILD] An implementation of The Web Application Messaging Protocol (WAMP).",
-  "main": "autobahn-xbr.js",
-
+  "name": "autobahn-xbr",
+  "version": "20.4.1",
+  "description": "The XBR Protocol (smart contracts package)",
+  "main": "index.js",
+  "files": [
+    "index.js",
+    "/lib"
+  ],
+  "scripts": {
+    "test": "nodeunit test/test.js"
+  },
+  "engines": {
+    "node": ">= 4.2.6"
+  },
+  "dependencies": {
+    "when": ">= 3.7.7",
+    "ws": ">= 1.1.4",
+    "sha3": ">=2.0.1",
+    "uuid": ">=3.3.2",
+    "uuid-parse": ">=1.1.0",
+    "cbor": ">=3.0.0",
+    "crypto-js": ">=3.1.8",
+    "eth-sig-util": ">=2.4.4",
+    "ethereumjs-util": ">=6.1.0",
+    "msgpack5": ">= 3.6.0",
+    "tweetnacl": ">= 0.14.3",
+    "tweetnacl-sealedbox-js": ">=1.1.0",
+    "web3": ">=1.2.1",
+    "@truffle/contract": ">=4.1.5"
+  },
+  "browser": {
+    "ws": false
+  },
   "repository": {
     "type": "git",
-    "url": "git://github.com/crossbario/autobahn-js-browser.git"
+    "url": "git://github.com/crossbario/autobahn-js.git"
   },
   "keywords": [
-    "WAMP",
-    "WebSocket",
-    "RPC",
-    "PubSub"
+    "ethereum",
+    "solidity",
+    "xbr",
+    "crossbar",
+    "autobahn",
+    "wamp",
+    "data-service",
+    "data-monetization"
   ],
   "author": "Crossbar.io Technologies GmbH",
-  "license": "MIT"
+  "license": "Apache-2.0"
 }

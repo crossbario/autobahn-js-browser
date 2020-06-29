@@ -213,10 +213,6 @@ exports.create_connection = create_connection;
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-var when = require('when');
-var when_fn = require("when/function");
-
-
 function auth(session, user, extra) {
 
    // Persona Issues:
@@ -253,7 +249,7 @@ function auth(session, user, extra) {
 
 exports.auth = auth;
 
-},{"when":120,"when/function":96}],4:[function(require,module,exports){
+},{}],4:[function(require,module,exports){
 (function (global){
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -273,8 +269,14 @@ require('./polyfill.js');
 
 var pjson = require('../package.json');
 
-var when = require('when');
-//var fn = require("when/function");
+let when;
+let HAS_WHEN;
+try {
+   when = require('when');
+   HAS_WHEN = true;
+} catch (e) {
+   HAS_WHEN = false;
+}
 
 var msgpack = require('msgpack5');
 var cbor = require('cbor');
@@ -320,7 +322,9 @@ exports.auth_persona = persona.auth;
 exports.auth_cra = cra;
 exports.auth_cryptosign = cryptosign;
 
-exports.when = when;
+if (HAS_WHEN) {
+   exports.when = when;
+}
 exports.msgpack = msgpack;
 exports.cbor = cbor;
 exports.nacl = nacl;
@@ -329,7 +333,7 @@ exports.util = util;
 exports.log = log;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"../package.json":121,"./auth/cra.js":1,"./auth/cryptosign.js":2,"./auth/persona.js":3,"./configure.js":5,"./connection.js":6,"./log.js":7,"./polyfill.js":8,"./serializer.js":16,"./session.js":17,"./util.js":20,"cbor":27,"msgpack5":70,"tweetnacl":91,"when":120,"when/monitor/console":118}],5:[function(require,module,exports){
+},{"../package.json":119,"./auth/cra.js":1,"./auth/cryptosign.js":2,"./auth/persona.js":3,"./configure.js":5,"./connection.js":6,"./log.js":7,"./polyfill.js":8,"./serializer.js":16,"./session.js":17,"./util.js":20,"cbor":27,"msgpack5":70,"tweetnacl":91,"when":118,"when/monitor/console":116}],5:[function(require,module,exports){
 ///////////////////////////////////////////////////////////////////////////////
 //
 //  AutobahnJS - http://autobahn.ws, http://wamp.ws
@@ -405,8 +409,6 @@ exports.transports = _transports;
 //  http://www.opensource.org/licenses/mit-license.php
 //
 ///////////////////////////////////////////////////////////////////////////////
-
-var when = require('when');
 
 var session = require('./session.js');
 var util = require('./util.js');
@@ -864,7 +866,7 @@ Object.defineProperty(Connection.prototype, "isRetrying", {
 
 exports.Connection = Connection;
 
-},{"./autobahn.js":4,"./log.js":7,"./session.js":17,"./util.js":20,"when":120}],7:[function(require,module,exports){
+},{"./autobahn.js":4,"./log.js":7,"./session.js":17,"./util.js":20}],7:[function(require,module,exports){
 (function (global){
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -3000,11 +3002,8 @@ try {
 // require('assert') would be nice .. but it does not
 // work with Google Closure after Browserify
 
-var when = require('when');
-var when_fn = require("when/function");
-
-var log = require('./log.js');
-var util = require('./util.js');
+const log = require('./log.js');
+const util = require('./util.js');
 
 // IE fallback (http://afuchs.tumblr.com/post/23550124774/date-now-in-ie8)
 Date.now = Date.now || function() { return +new Date; };
@@ -3779,12 +3778,7 @@ var Session = function (socket, defer, onchallenge, on_user_error, on_internal_e
                                  details.caller_authrole
                       );
 
-         // We use the following whenjs call wrapper, which automatically
-         // wraps a plain, non-promise value in a (immediately resolved) promise
-         //
-         // See: https://github.com/cujojs/when/blob/master/docs/api.md#fncall
-         //
-         when_fn.call(reg.endpoint, args, kwargs, cd).then(
+         util.as_promise(reg.endpoint, args, kwargs, cd).then(
 
             function (res) {
                // construct YIELD message
@@ -3926,7 +3920,7 @@ var Session = function (socket, defer, onchallenge, on_user_error, on_internal_e
                var method = msg[1];
                var extra = msg[2];
 
-               when_fn.call(self._onchallenge, self, method, extra).then(
+               util.as_promise(self._onchallenge, self, method, extra).then(
                   function (signature) {
 
                      if(typeof signature === "string"){
@@ -4414,16 +4408,27 @@ Session.prototype.unsubscribe = function (subscription) {
 
    var self = this;
 
+   var subs = self._subscriptions[subscription.id];
+   var i = subs.indexOf(subscription);
+
    if (!self.isOpen) {
+      if (i !== -1) {
+         // remove handler subscription
+         subs.splice(i, 1);
+         subscription.active = false;
+      }
       throw "session not open";
    }
 
    if (!subscription.active || !(subscription.id in self._subscriptions)) {
+      if (i !== -1) {
+         // remove handler subscription
+         subs.splice(i, 1);
+         subscription.active = false;
+      }
+
       throw "subscription not active";
    }
-
-   var subs = self._subscriptions[subscription.id];
-   var i = subs.indexOf(subscription);
 
    if (i === -1) {
       throw "subscription not active";
@@ -4552,7 +4557,7 @@ exports.Registration = Registration;
 exports.Publication = Publication;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./log.js":7,"./util.js":20,"when":120,"when/function":96}],18:[function(require,module,exports){
+},{"./log.js":7,"./util.js":20}],18:[function(require,module,exports){
 ///////////////////////////////////////////////////////////////////////////////
 //
 //  AutobahnJS - http://autobahn.ws, http://wamp.ws
@@ -4567,7 +4572,6 @@ exports.Publication = Publication;
 ///////////////////////////////////////////////////////////////////////////////
 
 
-var when = require('when');
 var util = require('../util.js');
 var log = require('../log.js');
 var serializer = require('../serializer.js');
@@ -4580,7 +4584,7 @@ function Factory (options) {
    util.assert(typeof options.url === "string", "options.url must be a string");
 
    self._options = options;
-};
+}
 
 
 Factory.prototype.type = "longpoll";
@@ -4759,7 +4763,7 @@ Factory.prototype.create = function () {
 
 exports.Factory = Factory;
 
-},{"../log.js":7,"../serializer.js":16,"../util.js":20,"when":120}],19:[function(require,module,exports){
+},{"../log.js":7,"../serializer.js":16,"../util.js":20}],19:[function(require,module,exports){
 (function (global){
 ///////////////////////////////////////////////////////////////////////////////
 //
@@ -5073,9 +5077,16 @@ exports.Factory = Factory;
 //
 ///////////////////////////////////////////////////////////////////////////////
 
-var log = require('./log.js');
+let HAS_WHEN;
+let when;
+try {
+   when = require('when');
+   HAS_WHEN = true;
+} catch (e) {
+   HAS_WHEN = false;
+}
 
-var when = require('when');
+let log = require('./log.js');
 
 
 /// Convert base64 string to array of bytes.
@@ -5161,11 +5172,9 @@ var rand_normal = function (mean, sd) {
 };
 
 
-
 var is_object = function(variable) {
    return !Array.isArray(variable) && (variable instanceof Object || typeof variable === 'object')
 };
-
 
 
 var assert = function (cond, text) {
@@ -5189,7 +5198,7 @@ var http_post = function (url, data, timeout) {
 
    log.debug("new http_post request", url, data, timeout);
 
-   var d = when.defer();
+   var d = deferred_factory();
    var req = new XMLHttpRequest();
    req.withCredentials = true; // pass along cookies
    req.onreadystatechange = function () {
@@ -5256,7 +5265,7 @@ var http_post = function (url, data, timeout) {
 // Helper to do HTTP/GET requests returning JSON parsed result as a promise.
 var http_get_json = function (url, timeout) {
 
-   var d = when.defer();
+   var d = deferred_factory();
    var req = new XMLHttpRequest();
    req.withCredentials = true; // pass along cookies
    req.onreadystatechange = function () {
@@ -5423,44 +5432,66 @@ var new_global_id = function() {
     return Math.floor(Math.random() * 9007199254740992) + 1;
 };
 
-var deferred_factory = function(options) {
-   var defer = null;
+let deferred_factory = function(options) {
+   let defer;
 
-   if (options && options.use_es6_promises) {
+   // Our strategy is to default to whenjs-based promise if a promise
+   // preference is not provided *and* whenjs is available.
+   // In the absence of whenjs and promise preference, we
+   // use the ES6 Promise because we are ES6+ so always expect
+   // that to be available.
 
-      if ('Promise' in global) {
+   let get_es6_promise_factory = function () {
+      return function () {
+         let deferred = {};
+
+         deferred.promise = new Promise(function (resolve, reject) {
+            deferred.resolve = resolve;
+            deferred.reject = reject;
+         });
+
+         return deferred;
+      };
+   }
+
+   if (options) {
+      if (options.use_es6_promises) {
+
          // ES6-based deferred factory
          //
-         defer = function () {
-            var deferred = {};
+         defer = get_es6_promise_factory();
 
-            deferred.promise = new Promise(function (resolve, reject) {
-               deferred.resolve = resolve;
-               deferred.reject = reject;
-            });
+      } else if (options.use_deferred) {
 
-            return deferred;
-         };
-      } else {
+         // use explicit deferred factory, e.g. jQuery.Deferred or Q.defer
+         //
+         defer = options.use_deferred;
 
-         log.debug("Warning: ES6 promises requested, but not found! Falling back to whenjs.");
+      } else if (HAS_WHEN) {
 
          // whenjs-based deferred factory
          //
          defer = when.defer;
+
+      } else {
+
+         // ES6-based deferred factory
+         //
+         defer = get_es6_promise_factory();
+
       }
-
-   } else if (options && options.use_deferred) {
-
-      // use explicit deferred factory, e.g. jQuery.Deferred or Q.defer
-      //
-      defer = options.use_deferred;
-
-   } else {
+   } else if (HAS_WHEN) {
 
       // whenjs-based deferred factory
       //
       defer = when.defer;
+
+   } else {
+
+      // ES6-based deferred factory
+      //
+      defer = get_es6_promise_factory();
+
    }
 
    return defer;
@@ -5492,6 +5523,16 @@ let _read_file = async function read_file (path) {
    });
 };
 
+let as_promise = function (func, ...args) {
+   return new Promise((resolve, reject) => {
+      try {
+         resolve(func.call(this, ...args));
+      } catch (e) {
+         reject(e);
+      }
+   });
+}
+
 if ('fs' in global) {
    exports.read_file = _read_file;
 } else {
@@ -5510,9 +5551,10 @@ exports.new_global_id = new_global_id;
 exports.deferred_factory = deferred_factory;
 exports.promise = promise;
 exports.sleep = sleep;
+exports.as_promise = as_promise;
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"./log.js":7,"fs":28,"when":120}],21:[function(require,module,exports){
+},{"./log.js":7,"fs":28,"when":118}],21:[function(require,module,exports){
 (function (global){
 'use strict';
 
@@ -17713,7 +17755,7 @@ var objectKeys = Object.keys || function (obj) {
 module.exports = Duplex;
 
 /*<replacement>*/
-var util = Object.create(require('core-util-is'));
+var util = require('core-util-is');
 util.inherits = require('inherits');
 /*</replacement>*/
 
@@ -17832,7 +17874,7 @@ module.exports = PassThrough;
 var Transform = require('./_stream_transform');
 
 /*<replacement>*/
-var util = Object.create(require('core-util-is'));
+var util = require('core-util-is');
 util.inherits = require('inherits');
 /*</replacement>*/
 
@@ -17915,7 +17957,7 @@ function _isUint8Array(obj) {
 /*</replacement>*/
 
 /*<replacement>*/
-var util = Object.create(require('core-util-is'));
+var util = require('core-util-is');
 util.inherits = require('inherits');
 /*</replacement>*/
 
@@ -18940,7 +18982,7 @@ module.exports = Transform;
 var Duplex = require('./_stream_duplex');
 
 /*<replacement>*/
-var util = Object.create(require('core-util-is'));
+var util = require('core-util-is');
 util.inherits = require('inherits');
 /*</replacement>*/
 
@@ -19152,7 +19194,7 @@ var Duplex;
 Writable.WritableState = WritableState;
 
 /*<replacement>*/
-var util = Object.create(require('core-util-is'));
+var util = require('core-util-is');
 util.inherits = require('inherits');
 /*</replacement>*/
 
@@ -22493,11 +22535,12 @@ function unpackneg(r, p) {
 }
 
 function crypto_sign_open(m, sm, n, pk) {
-  var i;
+  var i, mlen;
   var t = new Uint8Array(32), h = new Uint8Array(64);
   var p = [gf(), gf(), gf(), gf()],
       q = [gf(), gf(), gf(), gf()];
 
+  mlen = -1;
   if (n < 64) return -1;
 
   if (unpackneg(q, pk)) return -1;
@@ -22519,7 +22562,8 @@ function crypto_sign_open(m, sm, n, pk) {
   }
 
   for (i = 0; i < n; i++) m[i] = sm[i + 64];
-  return n;
+  mlen = n;
+  return mlen;
 }
 
 var crypto_secretbox_KEYBYTES = 32,
@@ -22580,23 +22624,7 @@ nacl.lowlevel = {
   crypto_sign_PUBLICKEYBYTES: crypto_sign_PUBLICKEYBYTES,
   crypto_sign_SECRETKEYBYTES: crypto_sign_SECRETKEYBYTES,
   crypto_sign_SEEDBYTES: crypto_sign_SEEDBYTES,
-  crypto_hash_BYTES: crypto_hash_BYTES,
-
-  gf: gf,
-  D: D,
-  L: L,
-  pack25519: pack25519,
-  unpack25519: unpack25519,
-  M: M,
-  A: A,
-  S: S,
-  Z: Z,
-  pow2523: pow2523,
-  add: add,
-  set25519: set25519,
-  modL: modL,
-  scalarmult: scalarmult,
-  scalarbase: scalarbase,
+  crypto_hash_BYTES: crypto_hash_BYTES
 };
 
 /* High-level API */
@@ -22920,112 +22948,6 @@ arguments[4][23][0].apply(exports,arguments)
 },{"dup":23}],95:[function(require,module,exports){
 arguments[4][24][0].apply(exports,arguments)
 },{"./support/isBuffer":94,"_process":76,"dup":24,"inherits":93}],96:[function(require,module,exports){
-/** @license MIT License (c) copyright 2013-2014 original author or authors */
-
-/**
- * Collection of helper functions for wrapping and executing 'traditional'
- * synchronous functions in a promise interface.
- *
- * @author Brian Cavalier
- * @contributor Renato Zannon
- */
-
-(function(define) {
-define(function(require) {
-
-	var when = require('./when');
-	var attempt = when['try'];
-	var _liftAll = require('./lib/liftAll');
-	var _apply = require('./lib/apply')(when.Promise);
-	var slice = Array.prototype.slice;
-
-	return {
-		lift: lift,
-		liftAll: liftAll,
-		call: attempt,
-		apply: apply,
-		compose: compose
-	};
-
-	/**
-	 * Takes a function and an optional array of arguments (that might be promises),
-	 * and calls the function. The return value is a promise whose resolution
-	 * depends on the value returned by the function.
-	 * @param {function} f function to be called
-	 * @param {Array} [args] array of arguments to func
-	 * @returns {Promise} promise for the return value of func
-	 */
-	function apply(f, args) {
-		// slice args just in case the caller passed an Arguments instance
-		return _apply(f, this, args == null ? [] : slice.call(args));
-	}
-
-	/**
-	 * Takes a 'regular' function and returns a version of that function that
-	 * returns a promise instead of a plain value, and handles thrown errors by
-	 * returning a rejected promise. Also accepts a list of arguments to be
-	 * prepended to the new function, as does Function.prototype.bind.
-	 *
-	 * The resulting function is promise-aware, in the sense that it accepts
-	 * promise arguments, and waits for their resolution.
-	 * @param {Function} f function to be bound
-	 * @param {...*} [args] arguments to be prepended for the new function @deprecated
-	 * @returns {Function} a promise-returning function
-	 */
-	function lift(f /*, args... */) {
-		var args = arguments.length > 1 ? slice.call(arguments, 1) : [];
-		return function() {
-			return _apply(f, this, args.concat(slice.call(arguments)));
-		};
-	}
-
-	/**
-	 * Lift all the functions/methods on src
-	 * @param {object|function} src source whose functions will be lifted
-	 * @param {function?} combine optional function for customizing the lifting
-	 *  process. It is passed dst, the lifted function, and the property name of
-	 *  the original function on src.
-	 * @param {(object|function)?} dst option destination host onto which to place lifted
-	 *  functions. If not provided, liftAll returns a new object.
-	 * @returns {*} If dst is provided, returns dst with lifted functions as
-	 *  properties.  If dst not provided, returns a new object with lifted functions.
-	 */
-	function liftAll(src, combine, dst) {
-		return _liftAll(lift, combine, dst, src);
-	}
-
-	/**
-	 * Composes multiple functions by piping their return values. It is
-	 * transparent to whether the functions return 'regular' values or promises:
-	 * the piped argument is always a resolved value. If one of the functions
-	 * throws or returns a rejected promise, the composed promise will be also
-	 * rejected.
-	 *
-	 * The arguments (or promises to arguments) given to the returned function (if
-	 * any), are passed directly to the first function on the 'pipeline'.
-	 * @param {Function} f the function to which the arguments will be passed
-	 * @param {...Function} [funcs] functions that will be composed, in order
-	 * @returns {Function} a promise-returning composition of the functions
-	 */
-	function compose(f /*, funcs... */) {
-		var funcs = slice.call(arguments, 1);
-
-		return function() {
-			var thisArg = this;
-			var args = slice.call(arguments);
-			var firstPromise = attempt.apply(thisArg, [f].concat(args));
-
-			return when.reduce(funcs, function(arg, func) {
-				return func.call(thisArg, arg);
-			}, firstPromise);
-		};
-	}
-});
-})(typeof define === 'function' && define.amd ? define : function (factory) { module.exports = factory(require); });
-
-
-
-},{"./lib/apply":100,"./lib/liftAll":112,"./when":120}],97:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -23044,7 +22966,7 @@ define(function (require) {
 });
 })(typeof define === 'function' && define.amd ? define : function (factory) { module.exports = factory(require); });
 
-},{"./Scheduler":98,"./env":110,"./makePromise":113}],98:[function(require,module,exports){
+},{"./Scheduler":97,"./env":109,"./makePromise":111}],97:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -23126,7 +23048,7 @@ define(function() {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
-},{}],99:[function(require,module,exports){
+},{}],98:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -23154,7 +23076,7 @@ define(function() {
 	return TimeoutError;
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
-},{}],100:[function(require,module,exports){
+},{}],99:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -23211,7 +23133,7 @@ define(function() {
 
 
 
-},{}],101:[function(require,module,exports){
+},{}],100:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -23512,7 +23434,7 @@ define(function(require) {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(require); }));
 
-},{"../apply":100,"../state":114}],102:[function(require,module,exports){
+},{"../apply":99,"../state":112}],101:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -23674,7 +23596,7 @@ define(function() {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
-},{}],103:[function(require,module,exports){
+},{}],102:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -23703,7 +23625,7 @@ define(function() {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
-},{}],104:[function(require,module,exports){
+},{}],103:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -23725,7 +23647,7 @@ define(function(require) {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(require); }));
 
-},{"../state":114}],105:[function(require,module,exports){
+},{"../state":112}],104:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -23792,7 +23714,7 @@ define(function() {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
-},{}],106:[function(require,module,exports){
+},{}],105:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -23818,7 +23740,7 @@ define(function() {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
-},{}],107:[function(require,module,exports){
+},{}],106:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -23898,7 +23820,7 @@ define(function(require) {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(require); }));
 
-},{"../TimeoutError":99,"../env":110}],108:[function(require,module,exports){
+},{"../TimeoutError":98,"../env":109}],107:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -23986,7 +23908,7 @@ define(function(require) {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(require); }));
 
-},{"../env":110,"../format":111}],109:[function(require,module,exports){
+},{"../env":109,"../format":110}],108:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -24026,7 +23948,7 @@ define(function() {
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
 
-},{}],110:[function(require,module,exports){
+},{}],109:[function(require,module,exports){
 (function (process){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
@@ -24103,7 +24025,7 @@ define(function(require) {
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(require); }));
 
 }).call(this,require('_process'))
-},{"_process":76}],111:[function(require,module,exports){
+},{"_process":76}],110:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -24161,37 +24083,7 @@ define(function() {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
-},{}],112:[function(require,module,exports){
-/** @license MIT License (c) copyright 2010-2014 original author or authors */
-/** @author Brian Cavalier */
-/** @author John Hann */
-
-(function(define) { 'use strict';
-define(function() {
-
-	return function liftAll(liftOne, combine, dst, src) {
-		if(typeof combine === 'undefined') {
-			combine = defaultCombine;
-		}
-
-		return Object.keys(src).reduce(function(dst, key) {
-			var f = src[key];
-			return typeof f === 'function' ? combine(dst, liftOne(f), key) : dst;
-		}, typeof dst === 'undefined' ? defaultDst(src) : dst);
-	};
-
-	function defaultCombine(o, f, k) {
-		o[k] = f;
-		return o;
-	}
-
-	function defaultDst(src) {
-		return typeof src === 'function' ? src.bind() : Object.create(src);
-	}
-});
-}(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
-
-},{}],113:[function(require,module,exports){
+},{}],111:[function(require,module,exports){
 (function (process){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
@@ -25150,7 +25042,7 @@ define(function() {
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
 }).call(this,require('_process'))
-},{"_process":76}],114:[function(require,module,exports){
+},{"_process":76}],112:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -25187,7 +25079,7 @@ define(function() {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
-},{}],115:[function(require,module,exports){
+},{}],113:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -25206,7 +25098,7 @@ define(function(require) {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(require); }));
 
-},{"./monitor/ConsoleReporter":116,"./monitor/PromiseMonitor":117}],116:[function(require,module,exports){
+},{"./monitor/ConsoleReporter":114,"./monitor/PromiseMonitor":115}],114:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -25314,7 +25206,7 @@ define(function(require) {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(require); }));
 
-},{"./error":119}],117:[function(require,module,exports){
+},{"./error":117}],115:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -25513,7 +25405,7 @@ define(function(require) {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(require); }));
 
-},{"../lib/env":110,"./error":119}],118:[function(require,module,exports){
+},{"../lib/env":109,"./error":117}],116:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -25529,7 +25421,7 @@ define(function(require) {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(require); }));
 
-},{"../monitor":115,"../when":120}],119:[function(require,module,exports){
+},{"../monitor":113,"../when":118}],117:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 /** @author Brian Cavalier */
 /** @author John Hann */
@@ -25617,7 +25509,7 @@ define(function() {
 });
 }(typeof define === 'function' && define.amd ? define : function(factory) { module.exports = factory(); }));
 
-},{}],120:[function(require,module,exports){
+},{}],118:[function(require,module,exports){
 /** @license MIT License (c) copyright 2010-2014 original author or authors */
 
 /**
@@ -25847,10 +25739,10 @@ define(function (require) {
 });
 })(typeof define === 'function' && define.amd ? define : function (factory) { module.exports = factory(require); });
 
-},{"./lib/Promise":97,"./lib/TimeoutError":99,"./lib/apply":100,"./lib/decorators/array":101,"./lib/decorators/flow":102,"./lib/decorators/fold":103,"./lib/decorators/inspect":104,"./lib/decorators/iterate":105,"./lib/decorators/progress":106,"./lib/decorators/timed":107,"./lib/decorators/unhandledRejection":108,"./lib/decorators/with":109}],121:[function(require,module,exports){
+},{"./lib/Promise":96,"./lib/TimeoutError":98,"./lib/apply":99,"./lib/decorators/array":100,"./lib/decorators/flow":101,"./lib/decorators/fold":102,"./lib/decorators/inspect":103,"./lib/decorators/iterate":104,"./lib/decorators/progress":105,"./lib/decorators/timed":106,"./lib/decorators/unhandledRejection":107,"./lib/decorators/with":108}],119:[function(require,module,exports){
 module.exports={
   "name": "autobahn",
-  "version": "20.4.1",
+  "version": "20.6.1",
   "description": "An implementation of The Web Application Messaging Protocol (WAMP).",
   "main": "index.js",
   "files": [
@@ -25868,12 +25760,12 @@ module.exports={
     "crypto-js": ">=3.1.8",
     "msgpack5": ">= 3.6.0",
     "tweetnacl": ">= 0.14.3",
-    "when": ">= 3.7.7",
     "ws": ">= 1.1.4"
   },
   "optionalDependencies": {
     "bufferutil": ">= 1.2.1",
-    "utf-8-validate": ">= 1.2.1"
+    "utf-8-validate": ">= 1.2.1",
+    "when": ">= 3.7.7"
   },
   "devDependencies": {
     "browserify": ">= 13.1.1",

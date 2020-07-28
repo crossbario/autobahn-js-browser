@@ -34941,36 +34941,30 @@ utils.intFromLE = intFromLE;
 arguments[4][35][0].apply(exports,arguments)
 },{"buffer":44,"dup":35}],161:[function(require,module,exports){
 module.exports={
-  "_args": [
-    [
-      "elliptic@6.5.3",
-      "/home/om26er/scm/crossbario/autobahn-js/packages/autobahn"
-    ]
-  ],
-  "_development": true,
-  "_from": "elliptic@6.5.3",
+  "_from": "elliptic@^6.5.2",
   "_id": "elliptic@6.5.3",
   "_inBundle": false,
   "_integrity": "sha512-IMqzv5wNQf+E6aHeIqATs0tOLeOTwj1QKbRcS3jBbYkl5oLAserA8yJTT7/VyHUYG91PRmPyeQDObKLPpeS4dw==",
   "_location": "/elliptic",
   "_phantomChildren": {},
   "_requested": {
-    "type": "version",
+    "type": "range",
     "registry": true,
-    "raw": "elliptic@6.5.3",
+    "raw": "elliptic@^6.5.2",
     "name": "elliptic",
     "escapedName": "elliptic",
-    "rawSpec": "6.5.3",
+    "rawSpec": "^6.5.2",
     "saveSpec": null,
-    "fetchSpec": "6.5.3"
+    "fetchSpec": "^6.5.2"
   },
   "_requiredBy": [
     "/browserify-sign",
     "/create-ecdh"
   ],
   "_resolved": "https://registry.npmjs.org/elliptic/-/elliptic-6.5.3.tgz",
-  "_spec": "6.5.3",
-  "_where": "/home/om26er/scm/crossbario/autobahn-js/packages/autobahn",
+  "_shasum": "cb59eb2efdaf73a0bd78ccd7015a62ad6e0f93d6",
+  "_spec": "elliptic@^6.5.2",
+  "_where": "/home/om26er/scm/crossbario/autobahn-js/packages/autobahn/node_modules/browserify-sign",
   "author": {
     "name": "Fedor Indutny",
     "email": "fedor@indutny.com"
@@ -34978,6 +34972,7 @@ module.exports={
   "bugs": {
     "url": "https://github.com/indutny/elliptic/issues"
   },
+  "bundleDependencies": false,
   "dependencies": {
     "bn.js": "^4.4.0",
     "brorand": "^1.0.1",
@@ -34987,6 +34982,7 @@ module.exports={
     "minimalistic-assert": "^1.0.0",
     "minimalistic-crypto-utils": "^1.0.0"
   },
+  "deprecated": false,
   "description": "EC cryptography",
   "devDependencies": {
     "brfs": "^1.4.3",
@@ -49228,7 +49224,7 @@ define(function (require) {
 },{"./lib/Promise":263,"./lib/TimeoutError":265,"./lib/apply":266,"./lib/decorators/array":267,"./lib/decorators/flow":268,"./lib/decorators/fold":269,"./lib/decorators/inspect":270,"./lib/decorators/iterate":271,"./lib/decorators/progress":272,"./lib/decorators/timed":273,"./lib/decorators/unhandledRejection":274,"./lib/decorators/with":275}],286:[function(require,module,exports){
 module.exports={
   "name": "autobahn",
-  "version": "20.7.1",
+  "version": "20.7.2",
   "description": "An implementation of The Web Application Messaging Protocol (WAMP).",
   "main": "index.js",
   "files": [

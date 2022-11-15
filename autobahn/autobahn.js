@@ -2958,9 +2958,9 @@ try {
       this.BINARY = true;
    }
 
-   CBORSerializer.prototype.serialize = function (obj) {
+   CBORSerializer.prototype.serialize = async function (obj) {
       try {
-         var payload = cbor.encode(obj);
+         var payload = await cbor.encodeAsync(obj);
          return payload;
       } catch (e) {
          log.warn('CBOR encoding error', e);
@@ -4907,8 +4907,8 @@ Factory.prototype.create = function () {
          // websocket.onclose() for errors also)
          //websocket.onerror = websocket.onclose;
 
-         transport.send = function (msg) {
-            var payload = transport.serializer.serialize(msg);
+         transport.send = async function (msg) {
+            let payload = await transport.serializer.serialize(msg);
             log.debug("WebSocket transport send", payload);
             websocket.send(payload);
          }
@@ -4966,8 +4966,8 @@ Factory.prototype.create = function () {
 
          websocket = new WebSocket(self._options.url, protocols, options);
 
-         transport.send = function (msg) {
-            var payload = transport.serializer.serialize(msg);
+         transport.send = async function (msg) {
+            let payload = await transport.serializer.serialize(msg);
             websocket.send(payload, {binary: transport.serializer.BINARY});
          };
 
@@ -33411,7 +33411,7 @@ module.exports = function whichTypedArray(value) {
 },{"available-typed-arrays":25,"call-bind/callBound":46,"es-abstract/helpers/getOwnPropertyDescriptor":94,"for-each":96,"has-tostringtag/shams":102,"is-typed-array":109}],180:[function(require,module,exports){
 module.exports={
   "name": "autobahn",
-  "version": "22.10.1",
+  "version": "22.11.1",
   "description": "An implementation of The Web Application Messaging Protocol (WAMP).",
   "main": "index.js",
   "files": [
